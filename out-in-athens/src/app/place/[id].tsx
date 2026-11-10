@@ -1,6 +1,6 @@
 // PLACE DETAIL — hours, cost, access, good-for, travel times, check-in stamp.
 import { router, useLocalSearchParams } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Alert, Animated, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -30,7 +30,7 @@ export default function PlaceDetail() {
   const { c, reduceMotion } = useTheme();
   const insets = useSafeAreaInsets();
   const { viewer, checkins, checkIn, savedPlaces, toggleSavedPlace, profile, report, reported } = useApp();
-  const stampAnim = useRef(new Animated.Value(0)).current;
+  const stampAnim = useState(() => new Animated.Value(0))[0];
   const [justStamped, setJustStamped] = useState(false);
 
   if (!p) {
@@ -121,7 +121,11 @@ export default function PlaceDetail() {
             </View>
           )}
           {!locked && (
-            <Pressable onPress={() => router.push({ pathname: '/plan', params: { refType: 'place', refId: p.id } })} accessibilityRole="button" style={{ marginTop: 12, alignSelf: 'flex-start', flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+            <Pressable
+              onPress={() => router.push({ pathname: '/plan', params: { refType: 'place', refId: p.id } })}
+              accessibilityRole="button"
+              style={{ marginTop: 12, alignSelf: 'flex-start', flexDirection: 'row', gap: 6, alignItems: 'center' }}
+            >
               <Icon name="users" color={c.brick} size={16} />
               <Txt v="labelSm" color={c.brick}>
                 Make a plan with friends →
@@ -144,10 +148,26 @@ export default function PlaceDetail() {
           <View style={{ borderWidth: 1.5, borderColor: c.line, marginBottom: 14 }}>
             {p.hours.kind === 'weekly' ? (
               DAY_SHORT.map((d, i) => {
-                const h = hoursForDay(p.hours, (() => { const x = new Date(now); x.setDate(now.getDate() + ((i - now.getDay() + 7) % 7)); return x; })());
+                const h = hoursForDay(
+                  p.hours,
+                  (() => {
+                    const x = new Date(now);
+                    x.setDate(now.getDate() + ((i - now.getDay() + 7) % 7));
+                    return x;
+                  })(),
+                );
                 const today = i === now.getDay();
                 return (
-                  <View key={d} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 6, backgroundColor: today ? c.surfaceAlt : 'transparent' }}>
+                  <View
+                    key={d}
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      backgroundColor: today ? c.surfaceAlt : 'transparent',
+                    }}
+                  >
                     <Txt v={today ? 'bodyBold' : 'bodySm'}>{d}</Txt>
                     <Txt v={today ? 'bodyBold' : 'bodySm'} muted={!today}>
                       {h ? `${fmtHour(h[0])} – ${fmtHour(h[1])}` : 'Closed'}
@@ -180,7 +200,16 @@ export default function PlaceDetail() {
                 Deals
               </Txt>
               {p.deals.map((d) => (
-                <View key={d.text} style={{ borderWidth: 1.5, borderStyle: 'dashed', borderColor: c.lineStrong, padding: 10, backgroundColor: d.day === now.getDay() ? c.surfaceAlt : 'transparent' }}>
+                <View
+                  key={d.text}
+                  style={{
+                    borderWidth: 1.5,
+                    borderStyle: 'dashed',
+                    borderColor: c.lineStrong,
+                    padding: 10,
+                    backgroundColor: d.day === now.getDay() ? c.surfaceAlt : 'transparent',
+                  }}
+                >
                   <Txt v="bodySm">
                     {d.day === now.getDay() ? 'TODAY · ' : ''}
                     {d.text}
@@ -190,7 +219,13 @@ export default function PlaceDetail() {
             </View>
           )}
 
-          <MiniMap coords={p.coords} icon={placeIcon(p)} color={color} label={p.name} onPress={() => !locked && openDirections(p.coords, p.name, profile.transport)} />
+          <MiniMap
+            coords={p.coords}
+            icon={placeIcon(p)}
+            color={color}
+            label={p.name}
+            onPress={() => !locked && openDirections(p.coords, p.name, profile.transport)}
+          />
           {!locked && (
             <View style={{ marginTop: 10 }}>
               <Txt v="labelSm" muted style={{ marginBottom: 4 }}>
@@ -255,12 +290,38 @@ export default function PlaceDetail() {
             transform: [{ scale: stampAnim.interpolate({ inputRange: [0, 1, 2], outputRange: [2.6, 1, 1.05] }) }, { rotate: '-12deg' }],
           }}
         >
-          <View style={{ width: 210, height: 210, borderRadius: 105, borderWidth: 5, borderColor: palette.brick, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(243,236,221,0.92)' }}>
-            <View style={{ width: 186, height: 186, borderRadius: 93, borderWidth: 1.5, borderColor: palette.brick, alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <View
+            style={{
+              width: 210,
+              height: 210,
+              borderRadius: 105,
+              borderWidth: 5,
+              borderColor: palette.brick,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: 'rgba(243,236,221,0.92)',
+            }}
+          >
+            <View
+              style={{
+                width: 186,
+                height: 186,
+                borderRadius: 93,
+                borderWidth: 1.5,
+                borderColor: palette.brick,
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 16,
+              }}
+            >
               <Txt style={{ fontFamily: fonts.label, fontSize: 13, letterSpacing: 2, color: palette.brick }} maxFontSizeMultiplier={1}>
                 ATHENS PASSPORT
               </Txt>
-              <Txt style={{ fontFamily: fonts.displayBlack, fontSize: 22, lineHeight: 24, color: palette.brick, textAlign: 'center', marginVertical: 6 }} numberOfLines={3} maxFontSizeMultiplier={1}>
+              <Txt
+                style={{ fontFamily: fonts.displayBlack, fontSize: 22, lineHeight: 24, color: palette.brick, textAlign: 'center', marginVertical: 6 }}
+                numberOfLines={3}
+                maxFontSizeMultiplier={1}
+              >
                 {p.name}
               </Txt>
               <Txt style={{ fontFamily: fonts.label, fontSize: 12, letterSpacing: 1.5, color: palette.brick }} maxFontSizeMultiplier={1}>

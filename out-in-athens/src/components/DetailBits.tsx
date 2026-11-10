@@ -28,4 +28,3 @@ export function Pill({ icon, text }: { icon: IconName; text: string }) {
     </View>
   );
 }
-

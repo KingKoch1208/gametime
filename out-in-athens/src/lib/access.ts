@@ -24,21 +24,7 @@ export type AccessResult = {
   perk: boolean;
 };
 
-export type StampKind =
-  | 'free'
-  | 'open'
-  | 'uga'
-  | 'guest'
-  | '18'
-  | '21'
-  | 'ticket'
-  | 'perk'
-  | 'lock'
-  | 'featured'
-  | 'pending'
-  | 'verified'
-  | 'live'
-  | 'new';
+export type StampKind = 'free' | 'open' | 'uga' | 'guest' | '18' | '21' | 'ticket' | 'perk' | 'lock' | 'featured' | 'pending' | 'verified' | 'live' | 'new';
 
 function ageOk(access: Access, age: AgeRange): boolean | 'unknown' {
   if (access === '21+') {
@@ -54,10 +40,7 @@ function ageOk(access: Access, age: AgeRange): boolean | 'unknown' {
   return true;
 }
 
-export function accessFor(
-  item: { access: Access; dawgPerk?: string; price?: number; cost?: number },
-  v: Viewer,
-): AccessResult {
+export function accessFor(item: { access: Access; dawgPerk?: string; price?: number; cost?: number }, v: Viewer): AccessResult {
   const isStudent = v.mode === 'student';
   const perk = isStudent && !!item.dawgPerk;
   const price = item.price ?? item.cost ?? 0;
@@ -72,8 +55,7 @@ export function accessFor(
   switch (item.access) {
     case 'uga_id':
       if (isStudent) return { visible: true, canAttend: true, stamp: 'uga', perk: true };
-      if (v.showUgaOnly)
-        return { visible: true, canAttend: false, lockReason: 'UGA ID required', stamp: 'lock', perk: false };
+      if (v.showUgaOnly) return { visible: true, canAttend: false, lockReason: 'UGA ID required', stamp: 'lock', perk: false };
       return { visible: false, canAttend: false, lockReason: 'UGA ID required', stamp: 'lock', perk: false };
     case 'uga_guest_ok':
       return { visible: true, canAttend: true, stamp: isStudent ? (price === 0 ? 'free' : 'uga') : 'guest', perk };

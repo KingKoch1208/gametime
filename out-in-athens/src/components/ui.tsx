@@ -1,5 +1,5 @@
 // Base UI primitives: text, paper background, buttons, chips, section headers.
-import { type ReactNode, useEffect, useRef } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import {
   Animated,
   ImageBackground,
@@ -82,8 +82,7 @@ type BtnProps = Omit<PressableProps, 'children'> & {
 
 export function Button({ label, icon, kind = 'primary', small, full, style, disabled, onPress, ...rest }: BtnProps) {
   const { c } = useTheme();
-  const bg =
-    kind === 'primary' ? c.brickFill : kind === 'ivy' ? c.ivyFill : kind === 'mustard' ? c.mustard : 'transparent';
+  const bg = kind === 'primary' ? c.brickFill : kind === 'ivy' ? c.ivyFill : kind === 'mustard' ? c.mustard : 'transparent';
   const fg = kind === 'secondary' || kind === 'ghost' ? c.text : kind === 'mustard' ? palette.ink : c.onFill;
   return (
     <Pressable
@@ -105,7 +104,8 @@ export function Button({ label, icon, kind = 'primary', small, full, style, disa
           opacity: disabled ? 0.4 : 1,
           transform: [{ translateY: pressed ? 1.5 : 0 }],
         },
-        kind !== 'ghost' && !pressed && { shadowColor: palette.ink, shadowOffset: { width: 2, height: 2 }, shadowOpacity: kind === 'secondary' ? 0 : 0.9, shadowRadius: 0 },
+        kind !== 'ghost' &&
+          !pressed && { shadowColor: palette.ink, shadowOffset: { width: 2, height: 2 }, shadowOpacity: kind === 'secondary' ? 0 : 0.9, shadowRadius: 0 },
         style,
       ]}
       {...rest}
@@ -267,7 +267,7 @@ export function ToggleRow({
   icon?: IconName;
 }) {
   const { c, reduceMotion } = useTheme();
-  const x = useRef(new Animated.Value(value ? 1 : 0)).current;
+  const x = useState(() => new Animated.Value(value ? 1 : 0))[0];
   useEffect(() => {
     if (reduceMotion) x.setValue(value ? 1 : 0);
     else Animated.spring(x, { toValue: value ? 1 : 0, useNativeDriver: true, bounciness: 10, speed: 20 }).start();
@@ -307,15 +307,7 @@ export function ToggleRow({
 
 // ——— Segmented control ———
 
-export function Segmented<T extends string>({
-  options,
-  value,
-  onChange,
-}: {
-  options: { value: T; label: string }[];
-  value: T;
-  onChange: (v: T) => void;
-}) {
+export function Segmented<T extends string>({ options, value, onChange }: { options: { value: T; label: string }[]; value: T; onChange: (v: T) => void }) {
   const { c } = useTheme();
   return (
     <View style={[styles.segment, { borderColor: c.lineStrong }]} accessibilityRole="tablist">
@@ -331,11 +323,7 @@ export function Segmented<T extends string>({
               haptic.tap();
               onChange(o.value);
             }}
-            style={[
-              styles.segmentItem,
-              i > 0 && { borderLeftWidth: 1.5, borderColor: c.lineStrong },
-              on && { backgroundColor: c.text },
-            ]}
+            style={[styles.segmentItem, i > 0 && { borderLeftWidth: 1.5, borderColor: c.lineStrong }, on && { backgroundColor: c.text }]}
           >
             <Txt v="labelSm" color={on ? c.bg : c.text} center numberOfLines={1}>
               {o.label}
@@ -351,12 +339,15 @@ export function Segmented<T extends string>({
 
 export function Sheet({ children, style, onPress, label }: { children: ReactNode; style?: ViewStyle; onPress?: () => void; label?: string }) {
   const { c } = useTheme();
-  const body = (
-    <View style={[styles.sheet, { backgroundColor: c.surface, borderColor: c.lineStrong }, style]}>{children}</View>
-  );
+  const body = <View style={[styles.sheet, { backgroundColor: c.surface, borderColor: c.lineStrong }, style]}>{children}</View>;
   if (!onPress) return body;
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.985 : 1 }] })}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.985 : 1 }] })}
+    >
       {body}
     </Pressable>
   );

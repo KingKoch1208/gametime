@@ -48,6 +48,7 @@ export default function NowScreen() {
   const weather = useWeather(now);
   const rainy = weather.condition === 'rain';
 
+  const minuteKey = now.getMinutes();
   const data = useMemo(() => {
     const indoorFirst = <T extends { item: { indoor: boolean } }>(xs: T[]) =>
       rainy ? [...xs].sort((a, b) => Number(b.item.indoor) - Number(a.item.indoor)) : xs;
@@ -58,8 +59,12 @@ export default function NowScreen() {
       .filter((l) => l.item.start.getHours() >= 18 || l.live)
       .slice(0, 4);
     const lateFood = getPlaces({ viewer, kind: 'food', foodTags: ['late'], openToMe: true }).slice(0, 3);
-    const friends = getEvents({ viewer, window: 'twoWeeks', openToMe: true }).filter((l) => l.item.friendsGoing.length > 0).slice(0, 6);
-    const fresh = getEvents({ viewer, window: 'twoWeeks' }).filter((l) => l.item.isNew).slice(0, 8);
+    const friends = getEvents({ viewer, window: 'twoWeeks', openToMe: true })
+      .filter((l) => l.item.friendsGoing.length > 0)
+      .slice(0, 6);
+    const fresh = getEvents({ viewer, window: 'twoWeeks' })
+      .filter((l) => l.item.isNew)
+      .slice(0, 8);
     const featured = getFeatured(viewer);
     const openNear = getBoredDeck(viewer, profile.transport, profile.interests, weather).length;
     const nearCount =
@@ -68,7 +73,7 @@ export default function NowScreen() {
     return { happening, free, sober, lateFood, friends, fresh, featured, openNear, nearCount };
     // tick forces recompute after pull-to-refresh
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewer, win, rainy, profile.transport, profile.interests, tick, now.getMinutes()]);
+  }, [viewer, win, rainy, profile.transport, profile.interests, tick, minuteKey]);
 
   const firstName = profile.name.split(' ')[0];
   const lateNight = now.getHours() >= 21 || now.getHours() < 4;
@@ -98,10 +103,25 @@ export default function NowScreen() {
         />
 
         {rainy && (
-          <View style={{ marginHorizontal: 20, marginTop: 14, flexDirection: 'row', gap: 10, alignItems: 'center', borderWidth: 1.5, borderStyle: 'dashed', borderColor: c.ivy, padding: 10 }}>
+          <View
+            style={{
+              marginHorizontal: 20,
+              marginTop: 14,
+              flexDirection: 'row',
+              gap: 10,
+              alignItems: 'center',
+              borderWidth: 1.5,
+              borderStyle: 'dashed',
+              borderColor: c.ivy,
+              padding: 10,
+            }}
+          >
             <Icon name="rain" color={c.ivy} size={22} />
             <Txt v="bodySm" style={{ flex: 1 }}>
-              <Txt v="bodySm" style={{ fontWeight: '700' }}>Rain today.</Txt> We moved indoor picks to the top so you stay dry.
+              <Txt v="bodySm" style={{ fontWeight: '700' }}>
+                Rain today.
+              </Txt>{' '}
+              We moved indoor picks to the top so you stay dry.
             </Txt>
           </View>
         )}
@@ -155,7 +175,12 @@ export default function NowScreen() {
                 const ins = Object.values(p.responses).filter((r) => r === 'in').length;
                 const topTime = [...p.times].sort((a, b) => b.votes.length - a.votes.length)[0];
                 return (
-                  <Sheet key={p.id} style={{ padding: 12, flexDirection: 'row', gap: 12, alignItems: 'center' }} onPress={() => router.push({ pathname: '/plan', params: { planId: p.id } })} label={`Plan: ${p.title}`}>
+                  <Sheet
+                    key={p.id}
+                    style={{ padding: 12, flexDirection: 'row', gap: 12, alignItems: 'center' }}
+                    onPress={() => router.push({ pathname: '/plan', params: { planId: p.id } })}
+                    label={`Plan: ${p.title}`}
+                  >
                     <Icon name="users" color={c.ivy} size={26} />
                     <View style={{ flex: 1 }}>
                       <Txt v="serif" numberOfLines={1}>
@@ -191,12 +216,16 @@ export default function NowScreen() {
           {data.sober.map((l) => (
             <TicketCard key={l.item.id} event={l.item} acc={l.acc} km={l.km} live={l.live} now={now} showFriends={false} />
           ))}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 14, paddingTop: 12, paddingBottom: 4 }}>
-            {data.lateFood.map((l) => (
-              <PlaceCard key={l.item.id} place={l.item} acc={l.acc} km={l.km} width={230} now={now} compact />
-            ))}
-          </ScrollView>
         </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 14, paddingTop: 22, paddingBottom: 4, paddingHorizontal: 20 }}
+        >
+          {data.lateFood.map((l) => (
+            <PlaceCard key={l.item.id} place={l.item} acc={l.acc} km={l.km} width={230} now={now} compact />
+          ))}
+        </ScrollView>
 
         {data.friends.length > 0 && (
           <>
@@ -314,7 +343,12 @@ function GetHomeSafe({ highlight }: { highlight: boolean }) {
               </View>
             </View>
           ))}
-          <Pressable accessibilityRole="button" accessibilityLabel="Call 911 in an emergency" onPress={() => Linking.openURL('tel:911')} style={{ marginTop: 4 }}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Call 911 in an emergency"
+            onPress={() => Linking.openURL('tel:911')}
+            style={{ marginTop: 4 }}
+          >
             <Txt v="labelSm" color={highlight ? palette.mustard : c.brick}>
               Emergency? Call 911 →
             </Txt>

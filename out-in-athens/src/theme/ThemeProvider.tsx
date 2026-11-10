@@ -19,7 +19,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [osReduceMotion, setOsReduceMotion] = useState(false);
 
   useEffect(() => {
-    AccessibilityInfo.isReduceMotionEnabled().then(setOsReduceMotion).catch(() => {});
+    AccessibilityInfo.isReduceMotionEnabled()
+      .then(setOsReduceMotion)
+      .catch(() => {});
     const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setOsReduceMotion);
     return () => sub.remove();
   }, []);

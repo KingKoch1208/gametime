@@ -19,9 +19,26 @@ export function GuideCover({ guide: g, width = 168, height = 220 }: { guide: Gui
       onPress={() => router.push(`/guide/${g.id}`)}
       style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.97 : 1 }] })}
     >
-      <View style={{ width, height, backgroundColor: fill, borderWidth: 1.5, borderColor: c.lineStrong, padding: 12, justifyContent: 'space-between', overflow: 'hidden' }}>
+      <View
+        style={{
+          width,
+          height,
+          backgroundColor: fill,
+          borderWidth: 1.5,
+          borderColor: c.lineStrong,
+          padding: 12,
+          justifyContent: 'space-between',
+          overflow: 'hidden',
+        }}
+      >
         <Svg width={width} height={height} style={{ position: 'absolute', left: 0, top: 0 }}>
-          <Path d={`M-10 ${height * 0.72} Q ${width * 0.5} ${height * 0.5} ${width + 10} ${height * 0.8}`} stroke={fg} strokeOpacity={0.18} strokeWidth={26} fill="none" />
+          <Path
+            d={`M-10 ${height * 0.72} Q ${width * 0.5} ${height * 0.5} ${width + 10} ${height * 0.8}`}
+            stroke={fg}
+            strokeOpacity={0.18}
+            strokeWidth={26}
+            fill="none"
+          />
         </Svg>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
           <Txt style={{ fontFamily: fonts.label, fontSize: 10, letterSpacing: 1.5, color: fg }}>OUT IN ATHENS</Txt>

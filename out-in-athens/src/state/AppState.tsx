@@ -153,7 +153,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const setPrefs = useCallback((p: Partial<Prefs>) => setState((s) => ({ ...s, prefs: { ...s.prefs, ...p } })), []);
 
   const stateRef = useRef(state);
-  stateRef.current = state;
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
   const toggleIn = (list: string[], id: string) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id]);
 
@@ -175,10 +177,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       return { ...s, rsvp };
     });
   }, []);
-  const checkIn = useCallback(
-    (placeId: string) => setState((s) => ({ ...s, checkins: { ...s.checkins, [placeId]: new Date().toISOString() } })),
-    [],
-  );
+  const checkIn = useCallback((placeId: string) => setState((s) => ({ ...s, checkins: { ...s.checkins, [placeId]: new Date().toISOString() } })), []);
   const addPlan = useCallback((p: Plan) => setState((s) => ({ ...s, plans: [p, ...s.plans] })), []);
   const updatePlan = useCallback(
     (id: string, patch: Partial<Plan>) => setState((s) => ({ ...s, plans: s.plans.map((p) => (p.id === id ? { ...p, ...patch } : p)) })),
@@ -195,7 +194,17 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       }),
     [],
   );
-  const report = useCallback((id: string) => setState((s) => ({ ...s, reported: toggleIn(s.reported.filter((x) => x !== id), id) })), []);
+  const report = useCallback(
+    (id: string) =>
+      setState((s) => ({
+        ...s,
+        reported: toggleIn(
+          s.reported.filter((x) => x !== id),
+          id,
+        ),
+      })),
+    [],
+  );
   const requestFeature = useCallback((id: string) => setState((s) => ({ ...s, featureRequests: [...s.featureRequests.filter((x) => x !== id), id] })), []);
   const resetAll = useCallback(() => setState(DEFAULT), []);
 
@@ -224,7 +233,25 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       requestFeature,
       resetAll,
     }),
-    [state, ready, viewer, setProfile, setPrefs, toggleSavedEvent, toggleSavedPlace, setRsvp, checkIn, addPlan, updatePlan, addSubmission, toggleFollow, toggleTag, report, requestFeature, resetAll],
+    [
+      state,
+      ready,
+      viewer,
+      setProfile,
+      setPrefs,
+      toggleSavedEvent,
+      toggleSavedPlace,
+      setRsvp,
+      checkIn,
+      addPlan,
+      updatePlan,
+      addSubmission,
+      toggleFollow,
+      toggleTag,
+      report,
+      requestFeature,
+      resetAll,
+    ],
   );
 
   return <AppCtx.Provider value={value}>{children}</AppCtx.Provider>;

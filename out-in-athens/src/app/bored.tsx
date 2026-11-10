@@ -24,6 +24,23 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { palette } from '@/theme/tokens';
 
 const { width: SW } = Dimensions.get('window');
+
+const INTEREST_LABEL: Record<string, string> = {
+  music: 'live music',
+  outdoors: 'the outdoors',
+  sports: 'sports',
+  arts: 'art',
+  food: 'food',
+  nightlife: 'nights out without the bars',
+  fitness: 'staying active',
+  volunteer: 'volunteering',
+  nerdy: 'nerdy stuff',
+  family: 'family stuff',
+  faith: 'faith',
+  film: 'movies',
+  markets: 'markets',
+  study: 'good study spots',
+};
 const SWIPE = SW * 0.28;
 
 export default function BoredScreen() {
@@ -38,8 +55,8 @@ export default function BoredScreen() {
   const [idx, setIdx] = useState(0);
   const [savedCount, setSavedCount] = useState(0);
 
-  const pos = useRef(new Animated.ValueXY()).current;
-  const deal = useRef(new Animated.Value(0)).current;
+  const pos = useState(() => new Animated.ValueXY())[0];
+  const deal = useState(() => new Animated.Value(0))[0];
 
   useEffect(() => {
     deal.setValue(0);
@@ -50,9 +67,13 @@ export default function BoredScreen() {
 
   const current = deck[idx];
   const idxRef = useRef(idx);
-  idxRef.current = idx;
+  useEffect(() => {
+    idxRef.current = idx;
+  }, [idx]);
   const deckRef = useRef(deck);
-  deckRef.current = deck;
+  useEffect(() => {
+    deckRef.current = deck;
+  }, [deck]);
 
   const save = (card: DeckCard) => {
     const id = card.listed.item.id;
@@ -75,9 +96,13 @@ export default function BoredScreen() {
     });
   };
   const flingRef = useRef(fling);
-  flingRef.current = fling;
+  useEffect(() => {
+    flingRef.current = fling;
+  });
 
-  const pan = useRef(
+  // flingRef is read inside gesture callbacks, never during render.
+  // eslint-disable-next-line react-hooks/refs
+  const pan = useState(() =>
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 6,
       onPanResponderMove: Animated.event([null, { dx: pos.x, dy: pos.y }], { useNativeDriver: false }),
@@ -87,7 +112,7 @@ export default function BoredScreen() {
         else Animated.spring(pos, { toValue: { x: 0, y: 0 }, useNativeDriver: false, bounciness: 10 }).start();
       },
     }),
-  ).current;
+  )[0];
 
   const rotate = pos.x.interpolate({ inputRange: [-SW, 0, SW], outputRange: ['-14deg', '0deg', '14deg'] });
   const saveOpacity = pos.x.interpolate({ inputRange: [0, SWIPE], outputRange: [0, 1], extrapolate: 'clamp' });
@@ -101,16 +126,28 @@ export default function BoredScreen() {
   return (
     <Paper style={{ paddingTop: insets.top + 8 }}>
       <View style={styles.top}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => router.back()} hitSlop={10} style={[styles.round, { borderColor: c.lineStrong, backgroundColor: c.surface }]}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Close"
+          onPress={() => router.back()}
+          hitSlop={10}
+          style={[styles.round, { borderColor: c.lineStrong, backgroundColor: c.surface }]}
+        >
           <Icon name="close" color={c.text} size={20} />
         </Pressable>
         <View style={{ alignItems: 'center' }}>
           <Txt v="label">I’m bored</Txt>
           <Txt v="caption" muted>
-            Open now · within {NEAR_RADIUS_KM[profile.transport]} km by {profile.transport} · {MODE_LABEL[profile.mode]}
+            Open now · within {(NEAR_RADIUS_KM[profile.transport] * 0.621).toFixed(1)} mi by {profile.transport} · {MODE_LABEL[profile.mode]}
           </Txt>
         </View>
-        <Pressable accessibilityRole="button" accessibilityLabel="Shuffle a new deck" onPress={reshuffle} hitSlop={10} style={[styles.round, { borderColor: c.lineStrong, backgroundColor: c.surface }]}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Shuffle a new deck"
+          onPress={reshuffle}
+          hitSlop={10}
+          style={[styles.round, { borderColor: c.lineStrong, backgroundColor: c.surface }]}
+        >
           <Icon name="shuffle" color={c.text} size={20} />
         </Pressable>
       </View>
@@ -128,7 +165,14 @@ export default function BoredScreen() {
                 <Animated.View
                   key={card.listed.item.id}
                   {...(isTop ? pan.panHandlers : {})}
-                  accessibilityActions={isTop ? [{ name: 'save', label: 'Save' }, { name: 'skip', label: 'Skip' }] : undefined}
+                  accessibilityActions={
+                    isTop
+                      ? [
+                          { name: 'save', label: 'Save' },
+                          { name: 'skip', label: 'Skip' },
+                        ]
+                      : undefined
+                  }
                   onAccessibilityAction={(e) => (e.nativeEvent.actionName === 'save' ? fling(1) : fling(-1))}
                   style={[
                     styles.cardWrap,
@@ -136,7 +180,11 @@ export default function BoredScreen() {
                       zIndex: 10 - depth,
                       transform: isTop
                         ? [{ translateY: dealT }, { translateX: pos.x }, { translateY: pos.y }, { rotate }]
-                        : [{ translateY: Animated.add(dealT, new Animated.Value(depth * 12)) }, { scale: 1 - depth * 0.04 }, { rotate: `${depth % 2 ? 2.5 : -2}deg` }],
+                        : [
+                            { translateY: Animated.add(dealT, new Animated.Value(depth * 12)) },
+                            { scale: 1 - depth * 0.04 },
+                            { rotate: `${depth % 2 ? 2.5 : -2}deg` },
+                          ],
                     },
                   ]}
                 >
@@ -168,7 +216,12 @@ export default function BoredScreen() {
 
       {current && (
         <View style={[styles.actions, { paddingBottom: insets.bottom + 14 }]}>
-          <Pressable accessibilityRole="button" accessibilityLabel="Skip" onPress={() => fling(-1)} style={[styles.bigRound, { borderColor: c.lineStrong, backgroundColor: c.surface }]}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Skip"
+            onPress={() => fling(-1)}
+            style={[styles.bigRound, { borderColor: c.lineStrong, backgroundColor: c.surface }]}
+          >
             <Icon name="close" color={c.text} size={28} />
           </Pressable>
           <Button
@@ -181,7 +234,12 @@ export default function BoredScreen() {
             }}
             style={{ flex: 1 }}
           />
-          <Pressable accessibilityRole="button" accessibilityLabel="Save" onPress={() => fling(1)} style={[styles.bigRound, { borderColor: c.ivyFill, backgroundColor: c.ivyFill }]}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Save"
+            onPress={() => fling(1)}
+            style={[styles.bigRound, { borderColor: c.ivyFill, backgroundColor: c.ivyFill }]}
+          >
             <Icon name="bookmark" color={palette.paper} size={26} />
           </Pressable>
         </View>
@@ -214,7 +272,7 @@ function DeckCardView({ card, now }: { card: DeckCard; now: Date }) {
       <PhotoBlock accent={it.accent} icon={icon} height={190} seed={title.length} />
       <View style={{ position: 'absolute', top: 12, left: 12, flexDirection: 'row', gap: 6 }}>
         {card.listed.live && isEvent && <Stamp kind="live" />}
-        <Stamp kind={card.listed.acc.stamp} />
+        <Stamp kind={card.listed.acc.stamp} style={{ backgroundColor: c.surface }} />
         {card.listed.acc.perk && <Stamp kind="perk" />}
       </View>
       <View style={{ padding: 16, gap: 6, flex: 1 }}>
@@ -235,7 +293,7 @@ function DeckCardView({ card, now }: { card: DeckCard; now: Date }) {
         <TravelBadges from={MOCK_ME} to={it.coords} showCar />
         {why && (
           <Txt v="italic" size={13} muted>
-            Because you’re into {why}.
+            Because you’re into {INTEREST_LABEL[why]}.
           </Txt>
         )}
       </View>

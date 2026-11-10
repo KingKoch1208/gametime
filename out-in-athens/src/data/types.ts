@@ -25,37 +25,11 @@ export type Interest =
   | 'markets'
   | 'study';
 
-export type EventCategory =
-  | 'concerts'
-  | 'sports'
-  | 'shows'
-  | 'campus'
-  | 'community'
-  | 'outdoors'
-  | 'arts'
-  | 'volunteer';
+export type EventCategory = 'concerts' | 'sports' | 'shows' | 'campus' | 'community' | 'outdoors' | 'arts' | 'volunteer';
 
-export type ExploreCategory =
-  | 'trails'
-  | 'museums'
-  | 'study'
-  | 'courts'
-  | 'gyms'
-  | 'records'
-  | 'scenic'
-  | 'volunteer'
-  | 'free';
+export type ExploreCategory = 'trails' | 'museums' | 'study' | 'courts' | 'gyms' | 'records' | 'scenic' | 'volunteer' | 'free';
 
-export type FoodTag =
-  | 'cheap'
-  | 'late'
-  | 'coffee'
-  | 'sweet'
-  | 'healthy'
-  | 'vegetarian'
-  | 'vegan'
-  | 'gf'
-  | 'halal';
+export type FoodTag = 'cheap' | 'late' | 'coffee' | 'sweet' | 'healthy' | 'vegetarian' | 'vegan' | 'gf' | 'halal';
 
 export type LatLng = { latitude: number; longitude: number };
 

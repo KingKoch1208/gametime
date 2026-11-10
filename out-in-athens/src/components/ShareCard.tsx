@@ -49,7 +49,10 @@ export function ShareCard({ event: e, ref }: { event: AthensEvent; ref?: Ref<Vie
         </View>
         <View>
           <Icon name={CATEGORY_ICON[e.category]} color={fg} size={54} strokeWidth={1.4} />
-          <Txt style={{ fontFamily: fonts.displayBlack, fontSize: 46, lineHeight: 46, color: fg, letterSpacing: -1.2, marginTop: 10 }} maxFontSizeMultiplier={1}>
+          <Txt
+            style={{ fontFamily: fonts.displayBlack, fontSize: 46, lineHeight: 46, color: fg, letterSpacing: -1.2, marginTop: 10 }}
+            maxFontSizeMultiplier={1}
+          >
             {e.title}
           </Txt>
           <Txt style={{ fontFamily: fonts.displayItalic, fontSize: 18, color: fg, marginTop: 10 }} maxFontSizeMultiplier={1}>

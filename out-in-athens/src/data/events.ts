@@ -38,7 +38,10 @@ const V: Record<string, { name: string; coords: LatLng; placeId?: string }> = {
   atlanta: { name: 'Bobby Dodd Stadium, Atlanta', coords: { latitude: 33.7725, longitude: -84.3928 } },
 };
 
-type Seed = Omit<AthensEvent, 'start' | 'end' | 'venue' | 'coords' | 'placeId' | 'interested' | 'going' | 'friendsGoing' | 'accessibleVenue' | 'petFriendly' | 'soberFriendly' | 'indoor'> & {
+type Seed = Omit<
+  AthensEvent,
+  'start' | 'end' | 'venue' | 'coords' | 'placeId' | 'interested' | 'going' | 'friendsGoing' | 'accessibleVenue' | 'petFriendly' | 'soberFriendly' | 'indoor'
+> & {
   when: When;
   v: keyof typeof V;
   interested?: number;

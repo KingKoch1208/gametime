@@ -8,20 +8,7 @@ import { buildEvents } from '@/data/events';
 import { FOOD, FOOD_RESOURCES } from '@/data/food';
 import { PLACES } from '@/data/places';
 import { FRIENDS, GUIDES, ORGS } from '@/data/social';
-import type {
-  AthensEvent,
-  EventCategory,
-  ExploreCategory,
-  FoodTag,
-  Friend,
-  Guide,
-  Interest,
-  LatLng,
-  Org,
-  Place,
-  Transport,
-  Weather,
-} from '@/data/types';
+import type { AthensEvent, EventCategory, ExploreCategory, FoodTag, Friend, Guide, Interest, LatLng, Org, Place, Transport, Weather } from '@/data/types';
 import { accessFor, type AccessResult, type Viewer } from '@/lib/access';
 import { distanceKm, isCarFree, isWalkable, MOCK_ME, NEAR_RADIUS_KM } from '@/lib/geo';
 import { isLive, isOpenAt, overlaps, sameDay, type TimeWindow, windowRange } from '@/lib/time';
@@ -180,8 +167,9 @@ export function getPlace(id: string): Place | undefined {
 }
 
 export function getDealsForDay(day: number, viewer: Viewer): { place: Place; text: string; acc: AccessResult }[] {
-  return FOOD.flatMap((p) => (p.deals ?? []).filter((d) => d.day === day).map((d) => ({ place: p, text: d.text, acc: accessFor(p, viewer) })))
-    .filter((d) => d.acc.visible);
+  return FOOD.flatMap((p) => (p.deals ?? []).filter((d) => d.day === day).map((d) => ({ place: p, text: d.text, acc: accessFor(p, viewer) }))).filter(
+    (d) => d.acc.visible,
+  );
 }
 
 export function getFoodResources(viewer: Viewer) {
@@ -192,9 +180,7 @@ export function getFoodResources(viewer: Viewer) {
 
 // ——— "I'm bored" deck ———
 
-export type DeckCard =
-  | { type: 'event'; listed: Listed<AthensEvent>; score: number }
-  | { type: 'place'; listed: Listed<Place>; score: number };
+export type DeckCard = { type: 'event'; listed: Listed<AthensEvent>; score: number } | { type: 'place'; listed: Listed<Place>; score: number };
 
 /** Things open right now, near you, and allowed for your Access Mode. */
 export function getBoredDeck(viewer: Viewer, transport: Transport, interests: Interest[], weather: Weather): DeckCard[] {

@@ -1,6 +1,6 @@
 // Custom map markers: tiny illustrated circles, color-coded
 // brick = events, ivy = places, mustard = food. Live pins pulse.
-import { memo, useEffect, useRef } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { Animated, View } from 'react-native';
 
 import { useTheme } from '@/theme/ThemeProvider';
@@ -26,8 +26,8 @@ function colorFor(c: ReturnType<typeof useTheme>['c'], k: PinColor) {
 function PinImpl({ icon, color, live, selected, locked }: { icon: IconName; color: PinColor; live?: boolean; selected?: boolean; locked?: boolean }) {
   const { c, reduceMotion } = useTheme();
   const { bg, fg } = colorFor(c, locked ? 'locked' : color);
-  const enter = useRef(new Animated.Value(0)).current;
-  const pulse = useRef(new Animated.Value(0)).current;
+  const enter = useState(() => new Animated.Value(0))[0];
+  const pulse = useState(() => new Animated.Value(0))[0];
   const size = selected ? 44 : 34;
 
   useEffect(() => {
@@ -102,7 +102,18 @@ export function ClusterPin({ count, color }: { count: number; color: PinColor })
         shadowOffset: { width: 0, height: 2 },
       }}
     >
-      <View style={{ position: 'absolute', width: size - 8, height: size - 8, borderRadius: (size - 8) / 2, borderWidth: 1, borderColor: fg, opacity: 0.6, borderStyle: 'dashed' }} />
+      <View
+        style={{
+          position: 'absolute',
+          width: size - 8,
+          height: size - 8,
+          borderRadius: (size - 8) / 2,
+          borderWidth: 1,
+          borderColor: fg,
+          opacity: 0.6,
+          borderStyle: 'dashed',
+        }}
+      />
       <Txt style={{ fontFamily: fonts.displayBlack, fontSize: 17, color: fg }} maxFontSizeMultiplier={1}>
         {count}
       </Txt>
@@ -137,7 +148,19 @@ export function FriendBubble({ initials, color, ghost }: { initials: string; col
           </Txt>
         )}
       </View>
-      <View style={{ width: 0, height: 0, borderLeftWidth: 6, borderRightWidth: 6, borderTopWidth: 7, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: palette.paper, marginTop: -1 }} />
+      <View
+        style={{
+          width: 0,
+          height: 0,
+          borderLeftWidth: 6,
+          borderRightWidth: 6,
+          borderTopWidth: 7,
+          borderLeftColor: 'transparent',
+          borderRightColor: 'transparent',
+          borderTopColor: palette.paper,
+          marginTop: -1,
+        }}
+      />
     </View>
   );
 }

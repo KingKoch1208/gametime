@@ -7,8 +7,7 @@ const week = (days: DayHours[]): Hours => ({ kind: 'weekly', days });
 const DAYLIGHT: Hours = { kind: 'daylight' };
 const ALWAYS: Hours = { kind: 'always' };
 
-type P = Omit<Place, 'kind' | 'photoCount' | 'accessibleVenue' | 'petFriendly'> &
-  Partial<Pick<Place, 'photoCount' | 'accessibleVenue' | 'petFriendly'>>;
+type P = Omit<Place, 'kind' | 'photoCount' | 'accessibleVenue' | 'petFriendly'> & Partial<Pick<Place, 'photoCount' | 'accessibleVenue' | 'petFriendly'>>;
 
 const place = (p: P): Place => ({
   kind: 'place',
@@ -133,7 +132,7 @@ export const PLACES: Place[] = [
     access: 'open',
     indoor: true,
     goodFor: ['rainy day', 'date', 'quiet'],
-    description: "The official state art museum. Always free. Thursday nights run late with talks and sketching.",
+    description: 'The official state art museum. Always free. Thursday nights run late with talks and sketching.',
     neighborhood: 'East Campus',
     accent: 'brick',
     reviewTags: ['chill', 'date spot', 'worth it'],
@@ -255,7 +254,15 @@ export const PLACES: Place[] = [
     exploreCategories: ['study', 'free'],
     interests: ['study', 'nerdy', 'family'],
     coords: { latitude: 33.9483, longitude: -83.3925 },
-    hours: week([[13, 18], [9, 20], [9, 20], [9, 20], [9, 20], [9, 18], [9, 18]]),
+    hours: week([
+      [13, 18],
+      [9, 20],
+      [9, 20],
+      [9, 20],
+      [9, 20],
+      [9, 18],
+      [9, 18],
+    ]),
     cost: 0,
     access: 'open',
     indoor: true,
@@ -271,7 +278,15 @@ export const PLACES: Place[] = [
     exploreCategories: ['study'],
     interests: ['study'],
     coords: { latitude: 33.9545, longitude: -83.3736 },
-    hours: week([[12, 26], [7.5, 26], [7.5, 26], [7.5, 26], [7.5, 26], [7.5, 20], [10, 20]]),
+    hours: week([
+      [12, 26],
+      [7.5, 26],
+      [7.5, 26],
+      [7.5, 26],
+      [7.5, 26],
+      [7.5, 20],
+      [10, 20],
+    ]),
     cost: 0,
     access: 'uga_guest_ok',
     dawgPerk: 'Late-night floors with UGA ID',
@@ -288,7 +303,15 @@ export const PLACES: Place[] = [
     exploreCategories: ['study'],
     interests: ['study', 'nerdy'],
     coords: { latitude: 33.9441, longitude: -83.3753 },
-    hours: week([[13, 24], [7.5, 24], [7.5, 24], [7.5, 24], [7.5, 24], [7.5, 18], [10, 18]]),
+    hours: week([
+      [13, 24],
+      [7.5, 24],
+      [7.5, 24],
+      [7.5, 24],
+      [7.5, 24],
+      [7.5, 18],
+      [10, 18],
+    ]),
     cost: 0,
     access: 'open',
     indoor: true,
@@ -304,7 +327,15 @@ export const PLACES: Place[] = [
     exploreCategories: ['study', 'free'],
     interests: ['study', 'nerdy', 'film'],
     coords: { latitude: 33.9509, longitude: -83.3753 },
-    hours: week([[10, 24], [7, 24], [7, 24], [7, 24], [7, 24], [7, 24], [10, 24]]),
+    hours: week([
+      [10, 24],
+      [7, 24],
+      [7, 24],
+      [7, 24],
+      [7, 24],
+      [7, 24],
+      [10, 24],
+    ]),
     cost: 0,
     access: 'open',
     dawgPerk: '$3 movies with UGA ID',
@@ -321,7 +352,15 @@ export const PLACES: Place[] = [
     exploreCategories: ['gyms'],
     interests: ['fitness', 'sports'],
     coords: { latitude: 33.9378, longitude: -83.3721 },
-    hours: week([[12, 22], [6, 24], [6, 24], [6, 24], [6, 24], [6, 22], [9, 20]]),
+    hours: week([
+      [12, 22],
+      [6, 24],
+      [6, 24],
+      [6, 24],
+      [6, 24],
+      [6, 22],
+      [9, 20],
+    ]),
     cost: 0,
     access: 'uga_id',
     dawgPerk: 'Included in student fees',

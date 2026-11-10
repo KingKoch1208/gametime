@@ -87,12 +87,25 @@ export default function FoodScreen() {
           {QUICK.map((q) => (
             <Chip key={q.key} label={q.label} active={has(q.key)} onPress={() => toggle(q.key)} />
           ))}
-          <Chip label={diet.length ? `Dietary · ${diet.length}` : 'Dietary'} icon="leaf" active={showDiet || diet.length > 0} onPress={() => setShowDiet(!showDiet)} accent="ivy" />
+          <Chip
+            label={diet.length ? `Dietary · ${diet.length}` : 'Dietary'}
+            icon="leaf"
+            active={showDiet || diet.length > 0}
+            onPress={() => setShowDiet(!showDiet)}
+            accent="ivy"
+          />
         </ScrollView>
         {showDiet && (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 20, paddingTop: 10 }}>
             {DIETARY.map((d) => (
-              <Chip key={d.key} small label={d.label} accent="ivy" active={diet.includes(d.key)} onPress={() => setDiet((x) => (x.includes(d.key) ? x.filter((y) => y !== d.key) : [...x, d.key]))} />
+              <Chip
+                key={d.key}
+                small
+                label={d.label}
+                accent="ivy"
+                active={diet.includes(d.key)}
+                onPress={() => setDiet((x) => (x.includes(d.key) ? x.filter((y) => y !== d.key) : [...x, d.key]))}
+              />
             ))}
           </View>
         )}
@@ -125,7 +138,13 @@ export default function FoodScreen() {
                     accessibilityRole="tab"
                     accessibilityState={{ selected: on }}
                     accessibilityLabel={d === now.getDay() ? 'Today' : DAY_SHORT[d]}
-                    style={{ paddingVertical: 8, paddingHorizontal: 14, borderWidth: 1.5, borderColor: c.lineStrong, backgroundColor: on ? c.mustard : c.surface }}
+                    style={{
+                      paddingVertical: 8,
+                      paddingHorizontal: 14,
+                      borderWidth: 1.5,
+                      borderColor: c.lineStrong,
+                      backgroundColor: on ? c.mustard : c.surface,
+                    }}
                   >
                     <Txt v="label" color={on ? palette.ink : c.text}>
                       {d === now.getDay() ? 'Today' : DAY_SHORT[d]}
@@ -142,7 +161,14 @@ export default function FoodScreen() {
                     onPress={() => router.push(`/place/${d.place.id}`)}
                     accessibilityRole="button"
                     accessibilityLabel={`${d.place.name}: ${d.text}`}
-                    style={{ flexDirection: 'row', borderWidth: 1.5, borderStyle: 'dashed', borderColor: c.lineStrong, backgroundColor: c.surface, opacity: d.acc.canAttend ? 1 : 0.5 }}
+                    style={{
+                      flexDirection: 'row',
+                      borderWidth: 1.5,
+                      borderStyle: 'dashed',
+                      borderColor: c.lineStrong,
+                      backgroundColor: c.surface,
+                      opacity: d.acc.canAttend ? 1 : 0.5,
+                    }}
                   >
                     <View style={{ width: 8, backgroundColor: c.mustard }} />
                     <View style={{ flex: 1, padding: 12 }}>
@@ -213,7 +239,11 @@ export default function FoodScreen() {
                 ))}
               </ScrollView>
             ) : (
-              <Pressable onPress={() => setPrefs({ showUgaOnly: true })} accessibilityRole="button" style={{ marginHorizontal: 20, flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+              <Pressable
+                onPress={() => setPrefs({ showUgaOnly: true })}
+                accessibilityRole="button"
+                style={{ marginHorizontal: 20, flexDirection: 'row', gap: 8, alignItems: 'center' }}
+              >
                 <Icon name="lock" color={c.textMuted} size={16} />
                 <Txt v="bodySm" muted style={{ flex: 1 }}>
                   Dining halls need a UGA ID, so they’re hidden in {viewer.mode === 'local' ? 'Local' : 'Visitor'} mode.{' '}
@@ -241,7 +271,12 @@ export default function FoodScreen() {
             Groceries and meals, free. Everybody needs a hand sometimes.
           </Txt>
           {resources.map(({ item: r, acc }) => (
-            <View key={r.id} style={{ paddingVertical: 10, borderBottomWidth: 1, borderColor: c.line, flexDirection: 'row', gap: 10 }} accessible accessibilityLabel={`${r.name}. ${r.detail}. ${r.hours}.${acc.canAttend ? '' : ' UGA ID required.'}`}>
+            <View
+              key={r.id}
+              style={{ paddingVertical: 10, borderBottomWidth: 1, borderColor: c.line, flexDirection: 'row', gap: 10 }}
+              accessible
+              accessibilityLabel={`${r.name}. ${r.detail}. ${r.hours}.${acc.canAttend ? '' : ' UGA ID required.'}`}
+            >
               <Icon name={r.access === 'uga_id' ? 'arch' : 'heart'} color={c.ivy} size={20} />
               <View style={{ flex: 1 }}>
                 <Txt v="bodyBold">{r.name}</Txt>

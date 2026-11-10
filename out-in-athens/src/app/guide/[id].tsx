@@ -4,12 +4,11 @@ import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { StackHeader } from '@/components/Header';
-import { Icon } from '@/components/Icon';
+import { CATEGORY_ICON, Icon } from '@/components/Icon';
 import { EmptyState } from '@/components/misc';
 import { PhotoBlock, placeIcon } from '@/components/PlaceCard';
 import { Stamp } from '@/components/Stamp';
 import { Paper, Squiggle, Txt } from '@/components/ui';
-import { CATEGORY_ICON } from '@/components/Icon';
 import { accessFor } from '@/lib/access';
 import { whenLabel, openStatus } from '@/lib/time';
 import { getEvent, getGuide, getPlace } from '@/services/dataService';
@@ -35,12 +34,24 @@ export default function GuideScreen() {
         const e = getEvent(it.refId);
         if (!e || e.end < now) return null;
         const acc = accessFor(e, viewer);
-        return acc.canAttend ? { it, title: e.title, sub: `${whenLabel(e.start, e.end, now)} · ${e.venue}`, accent: e.accent, icon: CATEGORY_ICON[e.category], acc, href: `/event/${e.id}` } : null;
+        return acc.canAttend
+          ? {
+              it,
+              title: e.title,
+              sub: `${whenLabel(e.start, e.end, now)} · ${e.venue}`,
+              accent: e.accent,
+              icon: CATEGORY_ICON[e.category],
+              acc,
+              href: `/event/${e.id}`,
+            }
+          : null;
       }
       const p = getPlace(it.refId);
       if (!p) return null;
       const acc = accessFor(p, viewer);
-      return acc.canAttend ? { it, title: p.name, sub: `${openStatus(p.hours, now).label} · ${p.neighborhood}`, accent: p.accent, icon: placeIcon(p), acc, href: `/place/${p.id}` } : null;
+      return acc.canAttend
+        ? { it, title: p.name, sub: `${openStatus(p.hours, now).label} · ${p.neighborhood}`, accent: p.accent, icon: placeIcon(p), acc, href: `/place/${p.id}` }
+        : null;
     })
     .filter(Boolean);
 
@@ -50,7 +61,11 @@ export default function GuideScreen() {
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}>
         <View style={{ backgroundColor: fill, padding: 22, paddingTop: 28 }}>
           <Txt style={{ fontFamily: fonts.label, fontSize: 12, letterSpacing: 2, color: fg }}>OUT IN ATHENS · GUIDE</Txt>
-          <Txt style={{ fontFamily: fonts.displayBlack, fontSize: 46, lineHeight: 46, color: fg, letterSpacing: -1.2, marginTop: 14 }} accessibilityRole="header" maxFontSizeMultiplier={1.3}>
+          <Txt
+            style={{ fontFamily: fonts.displayBlack, fontSize: 46, lineHeight: 46, color: fg, letterSpacing: -1.2, marginTop: 14 }}
+            accessibilityRole="header"
+            maxFontSizeMultiplier={1.3}
+          >
             {g.title}
           </Txt>
           <Txt style={{ fontFamily: fonts.displayItalic, fontSize: 19, color: fg, marginTop: 10 }}>{g.kicker}</Txt>
@@ -64,7 +79,12 @@ export default function GuideScreen() {
         </View>
         <View style={{ paddingHorizontal: 20, gap: 26 }}>
           {items.map((x, i) => (
-            <Pressable key={x!.it.refId} onPress={() => router.push(x!.href)} accessibilityRole="button" accessibilityLabel={`Stop ${i + 1}: ${x!.title}. ${x!.it.note}`}>
+            <Pressable
+              key={x!.it.refId}
+              onPress={() => router.push(x!.href)}
+              accessibilityRole="button"
+              accessibilityLabel={`Stop ${i + 1}: ${x!.title}. ${x!.it.note}`}
+            >
               <View style={{ flexDirection: 'row', gap: 14 }}>
                 <Txt style={{ fontFamily: fonts.displayBlack, fontSize: 52, lineHeight: 54, color: c.brick, width: 44 }} maxFontSizeMultiplier={1}>
                   {i + 1}
@@ -92,7 +112,8 @@ export default function GuideScreen() {
           ))}
           {items.length < g.items.length && (
             <Txt v="caption" muted>
-              {g.items.length - items.length} stop{g.items.length - items.length > 1 ? 's' : ''} hidden: already over or not open to you in your current Access Mode.
+              {g.items.length - items.length} stop{g.items.length - items.length > 1 ? 's' : ''} hidden: already over or not open to you in your current Access
+              Mode.
             </Txt>
           )}
         </View>

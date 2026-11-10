@@ -1,6 +1,6 @@
 // The hero: a big rubber stamp that says I'M BORED.
 import { router } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Animated, Pressable, View } from 'react-native';
 
 import { haptic } from '@/lib/feedback';
@@ -11,8 +11,8 @@ import { Txt } from './ui';
 
 export function BoredButton({ count }: { count: number }) {
   const { c, reduceMotion } = useTheme();
-  const press = useRef(new Animated.Value(0)).current;
-  const wobble = useRef(new Animated.Value(0)).current;
+  const press = useState(() => new Animated.Value(0))[0];
+  const wobble = useState(() => new Animated.Value(0))[0];
 
   useEffect(() => {
     if (reduceMotion) return;
@@ -60,19 +60,44 @@ export function BoredButton({ count }: { count: number }) {
             shadowRadius: 0,
           }}
         >
-          <View style={{ borderWidth: 2, borderColor: palette.paper, borderRadius: 2, paddingVertical: 16, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+          <View
+            style={{
+              borderWidth: 2,
+              borderColor: palette.paper,
+              borderRadius: 2,
+              paddingVertical: 16,
+              paddingHorizontal: 18,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 14,
+            }}
+          >
             <View style={{ flex: 1 }}>
               <Txt style={{ fontFamily: fonts.label, fontSize: 12, letterSpacing: 2, color: palette.paper, opacity: 0.85 }} maxFontSizeMultiplier={1.2}>
                 NOTHING TO DO?
               </Txt>
-              <Txt style={{ fontFamily: fonts.displayBlack, fontSize: 40, lineHeight: 42, color: palette.paper, letterSpacing: -1 }} maxFontSizeMultiplier={1.2}>
+              <Txt
+                style={{ fontFamily: fonts.displayBlack, fontSize: 40, lineHeight: 42, color: palette.paper, letterSpacing: -1 }}
+                maxFontSizeMultiplier={1.2}
+              >
                 I’m bored.
               </Txt>
               <Txt v="bodySm" color={palette.paper} style={{ opacity: 0.9, marginTop: 2 }}>
                 Deal me {count} things open right now, near me.
               </Txt>
             </View>
-            <View style={{ width: 56, height: 56, borderRadius: 28, borderWidth: 2, borderColor: palette.paper, alignItems: 'center', justifyContent: 'center', borderStyle: 'dashed' }}>
+            <View
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: 28,
+                borderWidth: 2,
+                borderColor: palette.paper,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderStyle: 'dashed',
+              }}
+            >
               <Icon name="shuffle" color={palette.paper} size={28} />
             </View>
           </View>

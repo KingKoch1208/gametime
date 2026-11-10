@@ -46,7 +46,7 @@ export function fmtMins(m: number): string {
 
 export function fmtDistance(km: number): string {
   const mi = km * 0.621;
-  return mi < 0.2 ? `${Math.round(mi * 5280 / 10) * 10} ft` : `${mi.toFixed(1)} mi`;
+  return mi < 0.2 ? `${Math.round((mi * 5280) / 10) * 10} ft` : `${mi.toFixed(1)} mi`;
 }
 
 /** Car-free = walkable in 25 min, bikeable in 20, or bus in 25. */

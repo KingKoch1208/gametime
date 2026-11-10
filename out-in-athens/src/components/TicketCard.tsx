@@ -1,7 +1,7 @@
 // Event cards are ticket stubs: big stamped date block, perforated edge,
 // rubber-stamp access badges.
 import { router } from 'expo-router';
-import { memo, useEffect, useRef } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
 
 import type { AthensEvent } from '@/data/types';
@@ -54,9 +54,15 @@ function TicketCardImpl({ event: e, acc, km, live, width, now = new Date(), show
       accessibilityLabel={a11y}
       accessibilityHint="Opens event details"
       onPress={() => router.push(`/event/${e.id}`)}
-      style={({ pressed }) => [{ width, transform: [{ scale: pressed ? 0.985 : 1 }] }]}
+      style={({ pressed }) => [{ width, transform: [{ scale: pressed ? 0.985 : 1 }] }, width != null && { alignSelf: 'stretch' }]}
     >
-      <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.lineStrong, opacity: locked ? 0.55 : 1 }]}>
+      <View
+        style={[
+          styles.card,
+          width != null && { flex: 1, minHeight: 176 },
+          { backgroundColor: c.surface, borderColor: c.lineStrong, opacity: locked ? 0.55 : 1 },
+        ]}
+      >
         {/* Date block */}
         <View style={[styles.date, { backgroundColor: fill }]}>
           {live ? (
@@ -143,7 +149,7 @@ export const TicketCard = memo(TicketCardImpl);
 
 export function LivePulse({ color, size = 10 }: { color: string; size?: number }) {
   const { reduceMotion } = useTheme();
-  const v = useRef(new Animated.Value(0)).current;
+  const v = useState(() => new Animated.Value(0))[0];
   useEffect(() => {
     if (reduceMotion) return;
     const loop = Animated.loop(Animated.timing(v, { toValue: 1, duration: 1400, useNativeDriver: true }));
@@ -171,7 +177,7 @@ export function LivePulse({ color, size = 10 }: { color: string; size?: number }
 // Blank ticket stub skeleton loader.
 export function TicketSkeleton() {
   const { c, reduceMotion } = useTheme();
-  const v = useRef(new Animated.Value(0.5)).current;
+  const v = useState(() => new Animated.Value(0.5))[0];
   useEffect(() => {
     if (reduceMotion) return;
     const loop = Animated.loop(

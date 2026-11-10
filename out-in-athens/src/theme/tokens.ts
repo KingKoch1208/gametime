@@ -23,6 +23,7 @@ export type ThemeColors = {
   ivyFill: string;
   mustard: string;
   onFill: string; // text on brick/ivy fills
+  inkFill: string; // 'ink' accent blocks (lifted in after-dark so they don't vanish)
   locked: string;
   overlay: string;
   mapStyle: 'light' | 'dark';
@@ -44,6 +45,7 @@ export const paperTheme: ThemeColors = {
   ivyFill: palette.ivy,
   mustard: palette.mustard,
   onFill: palette.paper,
+  inkFill: palette.ink,
   locked: '#8C8476',
   overlay: 'rgba(28,26,23,0.45)',
   mapStyle: 'light',
@@ -65,6 +67,7 @@ export const afterDarkTheme: ThemeColors = {
   ivyFill: '#3B5C48',
   mustard: palette.mustard,
   onFill: palette.paper,
+  inkFill: '#3D3831',
   locked: '#7A7266',
   overlay: 'rgba(0,0,0,0.6)',
   mapStyle: 'dark',
@@ -98,7 +101,7 @@ export function accentFill(c: ThemeColors, a: Accent): string {
     case 'mustard':
       return c.mustard;
     case 'ink':
-      return palette.ink;
+      return c.inkFill;
   }
 }
 

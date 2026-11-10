@@ -86,7 +86,11 @@ export default function EventDetail() {
               </View>
             </View>
             {/* Date stamp */}
-            <View style={{ borderWidth: 2.5, borderColor: fg, padding: 3, transform: [{ rotate: '6deg' }] }} accessible accessibilityLabel={`${DAY_LONG[e.start.getDay()]} ${MONTH_SHORT[e.start.getMonth()]} ${e.start.getDate()}`}>
+            <View
+              style={{ borderWidth: 2.5, borderColor: fg, padding: 3, transform: [{ rotate: '6deg' }] }}
+              accessible
+              accessibilityLabel={`${DAY_LONG[e.start.getDay()]} ${MONTH_SHORT[e.start.getMonth()]} ${e.start.getDate()}`}
+            >
               <View style={{ borderWidth: 1, borderColor: fg, paddingHorizontal: 10, paddingVertical: 2, alignItems: 'center' }}>
                 <Txt v="label" color={fg} size={12}>
                   {MONTH_SHORT[e.start.getMonth()]}
@@ -100,15 +104,19 @@ export default function EventDetail() {
               </View>
             </View>
           </View>
-          <Txt style={{ fontFamily: fonts.displayBlack, fontSize: 40, lineHeight: 42, letterSpacing: -1, color: fg, marginTop: 14 }} accessibilityRole="header" maxFontSizeMultiplier={1.3}>
+          <Txt
+            style={{ fontFamily: fonts.displayBlack, fontSize: 40, lineHeight: 42, letterSpacing: -1, color: fg, marginTop: 14 }}
+            accessibilityRole="header"
+            maxFontSizeMultiplier={1.3}
+          >
             {e.title}
           </Txt>
           <Txt v="italic" color={fg} style={{ marginTop: 8, opacity: 0.95 }}>
-            {whenLabel(e.start, e.end, now)} – {fmtTime(e.end)} · {e.venue}
+            {live ? whenLabel(e.start, e.end, now) : `${whenLabel(e.start, e.end, now)}–${fmtTime(e.end)}`} · {e.venue}
           </Txt>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
             {live && <Stamp kind="live" size="md" />}
-            <Stamp kind={acc.stamp} text={locked ? acc.lockReason : undefined} size="md" />
+            <Stamp kind={acc.stamp} text={locked ? acc.lockReason : undefined} size="md" style={{ backgroundColor: c.surface }} />
             {acc.perk && <Stamp kind="perk" text={e.dawgPerk ? `Dawg perk: ${e.dawgPerk}` : undefined} size="md" delay={120} />}
             {e.featured && <Stamp kind="featured" size="md" delay={200} />}
           </View>
@@ -137,7 +145,9 @@ export default function EventDetail() {
             <View style={{ borderWidth: 1.5, borderColor: c.brick, padding: 14, marginBottom: 16, flexDirection: 'row', gap: 10 }}>
               <Icon name="lock" color={c.brick} size={22} />
               <View style={{ flex: 1 }}>
-                <Txt v="bodyBold">{acc.lockReason}. Not for you in {profile.mode === 'local' ? 'Local' : 'Visitor'} mode.</Txt>
+                <Txt v="bodyBold">
+                  {acc.lockReason}. Not for you in {profile.mode === 'local' ? 'Local' : 'Visitor'} mode.
+                </Txt>
                 <Txt v="bodySm" muted style={{ marginTop: 2 }}>
                   We’re showing it because “Show UGA-only stuff” is on. No RSVP or directions, so nobody gets turned away at the door.
                 </Txt>
@@ -186,7 +196,11 @@ export default function EventDetail() {
           <TearLine style={{ marginTop: 18 }} />
 
           {/* Facts */}
-          <Fact icon="clock" label="When" value={`${DAY_LONG[e.start.getDay()]}, ${MONTH_SHORT[e.start.getMonth()]} ${e.start.getDate()} · ${fmtTime(e.start)}–${fmtTime(e.end)}`} />
+          <Fact
+            icon="clock"
+            label="When"
+            value={`${DAY_LONG[e.start.getDay()]}, ${MONTH_SHORT[e.start.getMonth()]} ${e.start.getDate()} · ${fmtTime(e.start)}–${fmtTime(e.end)}`}
+          />
           <Fact icon="tag" label="Price" value={e.price === 0 ? (e.priceNote ?? 'Free') : `$${e.price}${e.priceNote ? ` · ${e.priceNote}` : ''}`} />
           <Fact icon="lock" label="Access" value={ACCESS_LABEL[e.access]} />
           <Fact icon="pin" label="Where" value={e.venue} />
@@ -196,7 +210,13 @@ export default function EventDetail() {
             </Txt>
           ) : (
             <>
-              <MiniMap coords={e.coords} icon={CATEGORY_ICON[e.category]} color={locked ? 'locked' : 'brick'} label={e.venue} onPress={() => !locked && openDirections(e.coords, e.venue, profile.transport)} />
+              <MiniMap
+                coords={e.coords}
+                icon={CATEGORY_ICON[e.category]}
+                color={locked ? 'locked' : 'brick'}
+                label={e.venue}
+                onPress={() => !locked && openDirections(e.coords, e.venue, profile.transport)}
+              />
               {!locked && <TravelBadges from={MOCK_ME} to={e.coords} showCar style={{ marginTop: 10 }} />}
             </>
           )}
@@ -232,7 +252,13 @@ export default function EventDetail() {
                 </View>
               )}
               {e.ticketUrl && !locked && (
-                <Button small kind="mustard" icon="ticket" label="Get tickets (placeholder)" onPress={() => Alert.alert('Ticket link', 'In the real app this opens the venue’s ticketing page.')} />
+                <Button
+                  small
+                  kind="mustard"
+                  icon="ticket"
+                  label="Get tickets (placeholder)"
+                  onPress={() => Alert.alert('Ticket link', 'In the real app this opens the venue’s ticketing page.')}
+                />
               )}
             </Sheet>
           )}
@@ -329,7 +355,16 @@ function RoundBtn({ icon, label, onPress, active }: { icon: IconName; label: str
         haptic.tap();
         onPress();
       }}
-      style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: c.bg, borderWidth: 1.5, borderColor: c.lineStrong, alignItems: 'center', justifyContent: 'center' }}
+      style={{
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: c.bg,
+        borderWidth: 1.5,
+        borderColor: c.lineStrong,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
     >
       <Icon name={icon} color={active ? c.brick : c.text} fill={active ? c.brick : 'none'} size={20} />
     </Pressable>
@@ -348,7 +383,18 @@ function Action({ icon, label, onPress }: { icon: IconName; label: string; onPre
       }}
       style={({ pressed }) => ({ alignItems: 'center', gap: 6, width: 76, opacity: pressed ? 0.6 : 1 })}
     >
-      <View style={{ width: 48, height: 48, borderRadius: 24, borderWidth: 1.5, borderColor: c.lineStrong, alignItems: 'center', justifyContent: 'center', backgroundColor: c.surface }}>
+      <View
+        style={{
+          width: 48,
+          height: 48,
+          borderRadius: 24,
+          borderWidth: 1.5,
+          borderColor: c.lineStrong,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: c.surface,
+        }}
+      >
         <Icon name={icon} color={c.text} size={22} />
       </View>
       <Txt v="labelSm" center>

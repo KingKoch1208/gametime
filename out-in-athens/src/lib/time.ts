@@ -104,8 +104,18 @@ export function partOfDay(now: Date): string {
 
 // Approximate sunrise / sunset for Athens in a given month (daylight hours).
 const SUN: [number, number][] = [
-  [7.6, 17.8], [7.3, 18.3], [7.8, 19.7], [7.1, 20.1], [6.6, 20.5], [6.4, 20.8],
-  [6.6, 20.7], [6.9, 20.2], [7.2, 19.6], [7.6, 18.9], [7.0, 17.5], [7.4, 17.4],
+  [7.6, 17.8],
+  [7.3, 18.3],
+  [7.8, 19.7],
+  [7.1, 20.1],
+  [6.6, 20.5],
+  [6.4, 20.8],
+  [6.6, 20.7],
+  [6.9, 20.2],
+  [7.2, 19.6],
+  [7.6, 18.9],
+  [7.0, 17.5],
+  [7.4, 17.4],
 ];
 
 /** Returns [open, close] in hours for the given date, or null if closed. */

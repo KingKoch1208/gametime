@@ -44,7 +44,7 @@ export function PhotoBlock({
   const fg = onAccent(accent);
   const pid = `ht-${accent}-${seed}`;
   return (
-    <View style={[{ height, backgroundColor: fill, overflow: 'hidden' }, style]} accessible={false}>
+    <View style={[{ height, backgroundColor: fill, overflow: 'hidden' }, style]}>
       <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
         <Defs>
           <Pattern id={pid} patternUnits="userSpaceOnUse" width={7} height={7} patternTransform={`rotate(${20 + (seed % 4) * 10})`}>
@@ -123,7 +123,7 @@ function PlaceCardImpl({ place: p, acc, width, now = new Date(), compact }: Prop
                   {status.label}
                 </Txt>
                 {' · '}
-                {p.cost === 0 ? (p.costNote ?? 'Free') : p.costNote ?? `~$${p.avgPrice ?? p.cost}`}
+                {p.cost === 0 ? (p.costNote ?? 'Free') : (p.costNote ?? `~$${p.avgPrice ?? p.cost}`)}
               </Txt>
             </View>
             {!locked && (

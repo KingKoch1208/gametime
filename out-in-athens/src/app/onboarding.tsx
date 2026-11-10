@@ -1,6 +1,6 @@
 // ONBOARDING — 4 short, skippable steps. Sets Access Mode, interests,
 // how you get around, and (optionally) age so filters are right from day one.
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Animated, KeyboardAvoidingView, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -63,7 +63,7 @@ export default function Onboarding() {
   const [interests, setInterests] = useState<Interest[]>([]);
   const [transport, setTransport] = useState<Transport>('walk');
   const [age, setAge] = useState<AgeRange>(null);
-  const slide = useRef(new Animated.Value(0)).current;
+  const slide = useState(() => new Animated.Value(0))[0];
 
   const go = (n: number) => {
     haptic.tap();
@@ -102,7 +102,10 @@ export default function Onboarding() {
         {/* progress: ticket punches */}
         <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 20, marginTop: 18 }} accessible accessibilityLabel={`Step ${step + 1} of ${STEPS}`}>
           {Array.from({ length: STEPS }).map((_, i) => (
-            <View key={i} style={{ flex: 1, height: 6, backgroundColor: i <= step ? c.brickFill : 'transparent', borderWidth: 1.5, borderColor: c.lineStrong }} />
+            <View
+              key={i}
+              style={{ flex: 1, height: 6, backgroundColor: i <= step ? c.brickFill : 'transparent', borderWidth: 1.5, borderColor: c.lineStrong }}
+            />
           ))}
         </View>
 
@@ -162,7 +165,10 @@ export default function Onboarding() {
                   })}
                 </View>
                 <Txt v="label" style={{ marginTop: 24, marginBottom: 6 }}>
-                  What should we call you? <Txt v="labelSm" muted>(optional)</Txt>
+                  What should we call you?{' '}
+                  <Txt v="labelSm" muted>
+                    (optional)
+                  </Txt>
                 </Txt>
                 <TextInput
                   value={name}
@@ -303,9 +309,27 @@ export default function Onboarding() {
                           haptic.tap();
                           setAge(a.value);
                         }}
-                        style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, paddingHorizontal: 14, borderWidth: 1.5, borderColor: c.lineStrong, backgroundColor: on ? c.text : c.surface }}
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 12,
+                          paddingVertical: 14,
+                          paddingHorizontal: 14,
+                          borderWidth: 1.5,
+                          borderColor: c.lineStrong,
+                          backgroundColor: on ? c.text : c.surface,
+                        }}
                       >
-                        <View style={{ width: 22, height: 22, borderWidth: 1.5, borderColor: on ? c.bg : c.lineStrong, alignItems: 'center', justifyContent: 'center' }}>
+                        <View
+                          style={{
+                            width: 22,
+                            height: 22,
+                            borderWidth: 1.5,
+                            borderColor: on ? c.bg : c.lineStrong,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
                           {on && <Icon name="check" color={c.bg} size={16} strokeWidth={2.6} />}
                         </View>
                         <Txt v="title" color={on ? c.bg : c.text} style={{ width: 90 }}>

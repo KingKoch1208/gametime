@@ -26,7 +26,18 @@ export function MiniMap({ coords, icon, color, onPress, label }: { coords: LatLn
             <Pin icon={icon} color={color} />
           </Marker>
         </MapView>
-        <View style={{ position: 'absolute', right: 8, bottom: 8, backgroundColor: c.bg, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderColor: c.lineStrong }}>
+        <View
+          style={{
+            position: 'absolute',
+            right: 8,
+            bottom: 8,
+            backgroundColor: c.bg,
+            paddingHorizontal: 8,
+            paddingVertical: 3,
+            borderWidth: 1,
+            borderColor: c.lineStrong,
+          }}
+        >
           <Txt v="labelSm">Directions →</Txt>
         </View>
       </View>

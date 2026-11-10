@@ -17,7 +17,7 @@ const TABS: Record<string, { label: string; icon: IconName }> = {
 };
 
 function TabBar({ state, navigateToTab }: BottomTabBarProps) {
-  const { c } = useTheme();
+  const { c, dark } = useTheme();
   const insets = useSafeAreaInsets();
   return (
     <View
@@ -56,9 +56,9 @@ function TabBar({ state, navigateToTab }: BottomTabBarProps) {
                   width: 62,
                   height: 62,
                   borderRadius: 31,
-                  backgroundColor: focused ? c.brickFill : palette.ink,
+                  backgroundColor: focused ? c.brickFill : c.inkFill,
                   borderWidth: 3,
-                  borderColor: c.bg,
+                  borderColor: dark ? c.lineStrong : c.bg,
                   alignItems: 'center',
                   justifyContent: 'center',
                   shadowColor: palette.ink,

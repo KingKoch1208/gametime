@@ -1,6 +1,6 @@
 // Rubber-stamp badges: FREE, OPEN TO ALL, UGA ID, 21+, DAWG PERK, LOCK…
 // Slightly rotated, double-ruled border, stamped on with a little spring.
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Animated, StyleSheet, View, type ViewStyle } from 'react-native';
 
 import { STAMP_TEXT, type StampKind } from '@/lib/access';
@@ -20,14 +20,11 @@ type Props = {
 
 export function Stamp({ kind, text, rotate, animate = true, delay = 0, size = 'sm', style }: Props) {
   const { c, reduceMotion } = useTheme();
-  const anim = useRef(new Animated.Value(animate && !reduceMotion ? 0 : 1)).current;
+  const anim = useState(() => new Animated.Value(animate && !reduceMotion ? 0 : 1))[0];
 
   useEffect(() => {
     if (!animate || reduceMotion) return;
-    Animated.sequence([
-      Animated.delay(delay),
-      Animated.spring(anim, { toValue: 1, useNativeDriver: true, speed: 18, bounciness: 9 }),
-    ]).start();
+    Animated.sequence([Animated.delay(delay), Animated.spring(anim, { toValue: 1, useNativeDriver: true, speed: 18, bounciness: 9 })]).start();
   }, [anim, animate, delay, reduceMotion]);
 
   const { fg, bg, icon } = stampStyle(kind, c);
@@ -42,10 +39,7 @@ export function Stamp({ kind, text, rotate, animate = true, delay = 0, size = 's
       style={[
         {
           opacity: anim,
-          transform: [
-            { rotate: `${r}deg` },
-            { scale: anim.interpolate({ inputRange: [0, 1], outputRange: [1.9, 1] }) },
-          ],
+          transform: [{ rotate: `${r}deg` }, { scale: anim.interpolate({ inputRange: [0, 1], outputRange: [1.9, 1] }) }],
           alignSelf: 'flex-start',
         },
         style,
@@ -63,10 +57,7 @@ export function Stamp({ kind, text, rotate, animate = true, delay = 0, size = 's
           ]}
         >
           {icon && <Icon name={icon} color={fg} size={fs + 2} strokeWidth={2.2} />}
-          <Animated.Text
-            maxFontSizeMultiplier={1.3}
-            style={{ fontFamily: fonts.label, fontSize: fs, letterSpacing: 1.1, color: fg, lineHeight: fs * 1.35 }}
-          >
+          <Animated.Text maxFontSizeMultiplier={1.3} style={{ fontFamily: fonts.label, fontSize: fs, letterSpacing: 1.1, color: fg, lineHeight: fs * 1.35 }}>
             {label}
           </Animated.Text>
         </View>

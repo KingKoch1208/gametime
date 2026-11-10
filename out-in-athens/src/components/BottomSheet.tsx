@@ -1,5 +1,5 @@
 // Spring-y modal bottom sheet. Drag the handle down (or tap the backdrop) to close.
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { Animated, Dimensions, Modal, PanResponder, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -26,11 +26,13 @@ export function BottomSheet({
   const { c, reduceMotion } = useTheme();
   const insets = useSafeAreaInsets();
   const sheetH = H * heightPct;
-  const y = useRef(new Animated.Value(sheetH)).current;
+  const y = useState(() => new Animated.Value(sheetH))[0];
   const [mounted, setMounted] = useState(visible);
 
   useEffect(() => {
     if (visible) {
+      // Stay mounted through the exit animation, so mount state follows `visible` here.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMounted(true);
       y.setValue(sheetH);
       Animated.spring(y, { toValue: 0, useNativeDriver: true, bounciness: reduceMotion ? 0 : 7, speed: 14 }).start();
@@ -40,7 +42,7 @@ export function BottomSheet({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
-  const pan = useRef(
+  const pan = useState(() =>
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, g) => g.dy > 6 && Math.abs(g.dy) > Math.abs(g.dx),
       onPanResponderMove: (_, g) => y.setValue(Math.max(-20, g.dy)),
@@ -49,13 +51,15 @@ export function BottomSheet({
         else Animated.spring(y, { toValue: 0, useNativeDriver: true, bounciness: 8 }).start();
       },
     }),
-  ).current;
+  )[0];
 
   if (!mounted) return null;
 
   return (
     <Modal transparent visible animationType="none" onRequestClose={onClose} statusBarTranslucent>
-      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: c.overlay, opacity: y.interpolate({ inputRange: [0, sheetH], outputRange: [1, 0] }) }]}>
+      <Animated.View
+        style={[StyleSheet.absoluteFill, { backgroundColor: c.overlay, opacity: y.interpolate({ inputRange: [0, sheetH], outputRange: [1, 0] }) }]}
+      >
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close sheet" accessibilityRole="button" />
       </Animated.View>
       <Animated.View

@@ -25,7 +25,10 @@ export function Wordmark({ size = 15 }: { size?: number }) {
         haptic.stamp();
         const on = !prefs.pitchMode;
         setPrefs({ pitchMode: on });
-        Alert.alert(on ? 'Pitch Mode on' : 'Pitch Mode off', on ? 'A floating Student ↔ Local switch is now pinned to the screen. Long-press the logo again to hide it.' : undefined);
+        Alert.alert(
+          on ? 'Pitch Mode on' : 'Pitch Mode off',
+          on ? 'A floating Student ↔ Local switch is now pinned to the screen. Long-press the logo again to hide it.' : undefined,
+        );
       }}
       style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
     >
@@ -109,7 +112,16 @@ export function StackHeader({ title, right, transparent }: { title?: string; rig
         accessibilityLabel="Back"
         hitSlop={10}
         onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-        style={{ width: 38, height: 38, borderRadius: 19, borderWidth: 1.5, borderColor: c.lineStrong, alignItems: 'center', justifyContent: 'center', backgroundColor: c.surface }}
+        style={{
+          width: 38,
+          height: 38,
+          borderRadius: 19,
+          borderWidth: 1.5,
+          borderColor: c.lineStrong,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: c.surface,
+        }}
       >
         <Icon name="chevronLeft" color={c.text} size={20} />
       </Pressable>

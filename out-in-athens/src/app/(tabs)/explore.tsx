@@ -97,9 +97,31 @@ export default function ExploreScreen() {
               onPress={() => router.push('/passport')}
               accessibilityRole="button"
               accessibilityLabel={`Athens Passport. ${stamps} stamps.`}
-              style={{ marginHorizontal: 20, marginTop: 20, backgroundColor: palette.ivy, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 14, borderWidth: 1.5, borderColor: c.lineStrong }}
+              style={{
+                marginHorizontal: 20,
+                marginTop: 20,
+                backgroundColor: palette.ivy,
+                padding: 16,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 14,
+                borderWidth: 1.5,
+                borderColor: c.lineStrong,
+              }}
             >
-              <View style={{ width: 54, height: 54, borderRadius: 27, borderWidth: 2, borderColor: palette.mustard, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '-8deg' }] }}>
+              <View
+                style={{
+                  width: 54,
+                  height: 54,
+                  borderRadius: 27,
+                  borderWidth: 2,
+                  borderColor: palette.mustard,
+                  borderStyle: 'dashed',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transform: [{ rotate: '-8deg' }],
+                }}
+              >
                 <Icon name="passport" color={palette.mustard} size={28} />
               </View>
               <View style={{ flex: 1 }}>
@@ -137,7 +159,9 @@ export default function ExploreScreen() {
             <PlaceCard place={l.item} acc={l.acc} km={l.km} now={now} />
           </View>
         )}
-        ListEmptyComponent={<EmptyState icon="trail" title="Nothing open in this corner right now." body="Most trails close at dusk. The Arch is open 24/7, though." />}
+        ListEmptyComponent={
+          <EmptyState icon="trail" title="Nothing open in this corner right now." body="Most trails close at dusk. The Arch is open 24/7, though." />
+        }
       />
     </Paper>
   );

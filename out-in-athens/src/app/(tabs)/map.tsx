@@ -65,7 +65,7 @@ export default function MapScreen() {
   const [filters, setFilters] = useState<FilterKey[]>([]);
   const [stop, setStop] = useState(0);
   const [region, setRegion] = useState<Region>(INITIAL);
-  const [selected, setSelected] = useState<string | null>(null);
+  const [rawSelected, setSelected] = useState<string | null>(null);
 
   // Sample time for "is this place open" at each slider stop.
   const sampleTime = useMemo(() => {
@@ -149,6 +149,9 @@ export default function MapScreen() {
     return out;
   }, [filters, stop, viewer, now, sampleTime]);
 
+  // A selected pin can disappear when filters / the time slider change.
+  const selected = rawSelected && pins.some((p) => p.id === rawSelected) ? rawSelected : null;
+
   // Heat glow: live / busy events, weighted by "going" + friends nearby.
   const heat = useMemo(() => {
     const evs = pins.filter((p) => p.kind === 'event' && !p.locked);
@@ -189,10 +192,6 @@ export default function MapScreen() {
     const sel = pins.find((p) => p.id === selected);
     if (!sel) return [];
     return [...pins].sort((a, b) => distanceKm(sel.coords, a.coords) - distanceKm(sel.coords, b.coords)).slice(0, 10);
-  }, [pins, selected]);
-
-  useEffect(() => {
-    if (selected && !pins.find((p) => p.id === selected)) setSelected(null);
   }, [pins, selected]);
 
   const focus = useCallback((p: MapPin) => {
@@ -278,7 +277,19 @@ export default function MapScreen() {
       {/* Floating top: filter chips + avatar */}
       <View style={{ position: 'absolute', top: insets.top + 6, left: 0, right: 0 }} pointerEvents="box-none">
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 10 }} pointerEvents="box-none">
-          <View style={{ flex: 1, backgroundColor: c.bg, borderWidth: 1.5, borderColor: c.lineStrong, paddingHorizontal: 12, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: c.bg,
+              borderWidth: 1.5,
+              borderColor: c.lineStrong,
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 8,
+            }}
+          >
             <Icon name="flame" color={c.brick} size={18} />
             <Txt v="label" numberOfLines={1} style={{ flex: 1 }}>
               {pins.filter((p) => p.live).length} live · {pins.length} on the map
@@ -304,7 +315,19 @@ export default function MapScreen() {
             haptic.tap();
             mapRef.current?.animateToRegion({ ...MOCK_ME, latitudeDelta: 0.025, longitudeDelta: 0.025 }, 400);
           }}
-          style={{ position: 'absolute', right: 14, bottom: 112, width: 48, height: 48, borderRadius: 24, backgroundColor: c.bg, borderWidth: 1.5, borderColor: c.lineStrong, alignItems: 'center', justifyContent: 'center' }}
+          style={{
+            position: 'absolute',
+            right: 14,
+            bottom: 112,
+            width: 48,
+            height: 48,
+            borderRadius: 24,
+            backgroundColor: c.bg,
+            borderWidth: 1.5,
+            borderColor: c.lineStrong,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
         >
           <Icon name="locate" color={c.text} size={24} />
         </Pressable>
@@ -335,16 +358,20 @@ export default function MapScreen() {
 function TimeSlider({ stop, onChange }: { stop: number; onChange: (s: number) => void }) {
   const { c } = useTheme();
   const trackW = SW - 28 - 32;
-  const x = useRef(new Animated.Value((stop / 2) * trackW)).current;
+  const x = useState(() => new Animated.Value((stop / 2) * trackW))[0];
   const stopRef = useRef(stop);
-  stopRef.current = stop;
+  useEffect(() => {
+    stopRef.current = stop;
+  }, [stop]);
   const startX = useRef(0);
 
   useEffect(() => {
     Animated.spring(x, { toValue: (stop / 2) * trackW, useNativeDriver: false, bounciness: 8 }).start();
   }, [stop, trackW, x]);
 
-  const pan = useRef(
+  // Refs below are read inside gesture callbacks, never during render.
+  // eslint-disable-next-line react-hooks/refs
+  const pan = useState(() =>
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onPanResponderGrant: () => {
@@ -363,11 +390,22 @@ function TimeSlider({ stop, onChange }: { stop: number; onChange: (s: number) =>
         Animated.spring(x, { toValue: (stopRef.current / 2) * trackW, useNativeDriver: false, bounciness: 10 }).start();
       },
     }),
-  ).current;
+  )[0];
 
   return (
     <View
-      style={{ position: 'absolute', left: 14, right: 14, bottom: 14, backgroundColor: c.bg, borderWidth: 1.5, borderColor: c.lineStrong, paddingHorizontal: 16, paddingTop: 10, paddingBottom: 12 }}
+      style={{
+        position: 'absolute',
+        left: 14,
+        right: 14,
+        bottom: 14,
+        backgroundColor: c.bg,
+        borderWidth: 1.5,
+        borderColor: c.lineStrong,
+        paddingHorizontal: 16,
+        paddingTop: 10,
+        paddingBottom: 12,
+      }}
       accessible
       accessibilityRole="adjustable"
       accessibilityLabel="Time"
@@ -430,7 +468,7 @@ function PinSheet({
 }) {
   const { c } = useTheme();
   const insets = useSafeAreaInsets();
-  const y = useRef(new Animated.Value(320)).current;
+  const y = useState(() => new Animated.Value(320))[0];
   const listRef = useRef<FlatList<MapPin>>(null);
   const cardW = SW - 28;
 
@@ -438,11 +476,12 @@ function PinSheet({
     Animated.spring(y, { toValue: 0, useNativeDriver: true, bounciness: 8, speed: 14 }).start();
   }, [y]);
 
+  const firstId = pins[0]?.id;
   useEffect(() => {
     listRef.current?.scrollToOffset({ offset: 0, animated: false });
-  }, [pins[0]?.id]);
+  }, [firstId]);
 
-  const pan = useRef(
+  const pan = useState(() =>
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, g) => g.dy > 8 && Math.abs(g.dy) > Math.abs(g.dx) * 1.5,
       onPanResponderMove: (_, g) => y.setValue(Math.max(-30, g.dy)),
@@ -451,13 +490,10 @@ function PinSheet({
         else Animated.spring(y, { toValue: 0, useNativeDriver: true, bounciness: 10 }).start();
       },
     }),
-  ).current;
+  )[0];
 
   return (
-    <Animated.View
-      {...pan.panHandlers}
-      style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingBottom: 12, transform: [{ translateY: y }] }}
-    >
+    <Animated.View {...pan.panHandlers} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingBottom: 12, transform: [{ translateY: y }] }}>
       <View style={{ alignItems: 'center', paddingVertical: 6 }}>
         <View style={{ width: 44, height: 5, borderRadius: 3, backgroundColor: c.bg, borderWidth: 1, borderColor: c.lineStrong }} />
       </View>
@@ -508,7 +544,9 @@ function PinSheet({
                 onPress={() => router.push(p.kind === 'event' ? `/event/${p.id.slice(2)}` : `/place/${p.id.slice(2)}`)}
                 style={{ flex: 1 }}
               />
-              {!p.locked && <Button small label="Let’s go" icon="directions" onPress={() => openDirections(p.coords, p.title, transport)} style={{ flex: 1 }} />}
+              {!p.locked && (
+                <Button small label="Let’s go" icon="directions" onPress={() => openDirections(p.coords, p.title, transport)} style={{ flex: 1 }} />
+              )}
             </View>
             {index === 0 && pins.length > 1 && (
               <Txt v="caption" muted center>

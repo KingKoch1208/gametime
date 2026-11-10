@@ -76,7 +76,9 @@ export default function EventsScreen() {
     return () => clearTimeout(t);
   }, []);
 
+  // Deep links (e.g. "Free this week → See all") preset filters on an already-mounted tab.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (params.free) setF((x) => ({ ...x, freeOnly: true, window: 'week' }));
     if (params.cat) setCat(params.cat as EventCategory);
   }, [params.free, params.cat]);
@@ -98,8 +100,9 @@ export default function EventsScreen() {
     maxPrice: f.maxPrice === 'any' ? null : Number(f.maxPrice),
     includeAway: cat === 'sports',
   };
+  const queryKey = JSON.stringify({ ...query, viewer: undefined, day: query.day?.toDateString() });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const list = useMemo(() => getEvents(query), [JSON.stringify({ ...query, viewer: undefined, day: query.day?.toDateString() }), viewer, tick]);
+  const list = useMemo(() => getEvents(query), [queryKey, viewer, tick]);
 
   const activeCount = Object.entries(f).filter(([k, v]) => v !== (DEFAULT_F as Record<string, unknown>)[k]).length;
   const days = Array.from({ length: 14 }, (_, i) => addDays(startOfDay(now), i));
@@ -118,10 +121,17 @@ export default function EventsScreen() {
           <View>
             <TabHeader
               title="Events"
-              right={<IconButton icon={view === 'list' ? 'calendar' : 'list'} label={view === 'list' ? 'Show calendar strip' : 'Show list'} onPress={() => setView((v) => (v === 'list' ? 'calendar' : 'list'))} />}
+              right={
+                <IconButton
+                  icon={view === 'list' ? 'calendar' : 'list'}
+                  label={view === 'list' ? 'Show calendar strip' : 'Show list'}
+                  onPress={() => setView((v) => (v === 'list' ? 'calendar' : 'list'))}
+                />
+              }
               subtitle={
                 <Txt v="bodySm" muted style={{ marginTop: 2 }}>
-                  {list.length} things over the next two weeks, filtered for {profile.mode === 'student' ? 'a UGA student' : profile.mode === 'local' ? 'an Athens local' : 'a visitor'}.
+                  {list.length} things over the next two weeks, filtered for{' '}
+                  {profile.mode === 'student' ? 'a UGA student' : profile.mode === 'local' ? 'an Athens local' : 'a visitor'}.
                 </Txt>
               }
             />
@@ -143,7 +153,14 @@ export default function EventsScreen() {
                       accessibilityRole="button"
                       accessibilityState={{ selected: on }}
                       accessibilityLabel={`${DAY_SHORT[d.getDay()]} ${MONTH_SHORT[d.getMonth()]} ${d.getDate()}, ${n} events`}
-                      style={{ width: 56, paddingVertical: 8, alignItems: 'center', borderWidth: 1.5, borderColor: c.lineStrong, backgroundColor: on ? c.text : c.surface }}
+                      style={{
+                        width: 56,
+                        paddingVertical: 8,
+                        alignItems: 'center',
+                        borderWidth: 1.5,
+                        borderColor: c.lineStrong,
+                        backgroundColor: on ? c.text : c.surface,
+                      }}
                     >
                       <Txt v="labelSm" color={on ? c.bg : c.textMuted}>
                         {sameDay(d, now) ? 'Today' : DAY_SHORT[d.getDay()]}
@@ -177,7 +194,10 @@ export default function EventsScreen() {
               >
                 <Icon name="lock" color={c.textMuted} size={15} />
                 <Txt v="caption" muted style={{ flex: 1 }}>
-                  UGA-ID-only events are hidden. <Txt v="caption" color={c.brick}>Show them (locked)</Txt>
+                  UGA-ID-only events are hidden.{' '}
+                  <Txt v="caption" color={c.brick}>
+                    Show them (locked)
+                  </Txt>
                 </Txt>
               </Pressable>
             )}
@@ -205,7 +225,11 @@ export default function EventsScreen() {
             <EmptyState
               icon="ticket"
               title="Nothing matches. Yet."
-              body={view === 'calendar' ? 'Slow day on the poles. Try another day, or loosen the filters.' : 'Too many filters? Even the 40 Watt takes a night off sometimes.'}
+              body={
+                view === 'calendar'
+                  ? 'Slow day on the poles. Try another day, or loosen the filters.'
+                  : 'Too many filters? Even the 40 Watt takes a night off sometimes.'
+              }
             />
           )
         }
@@ -262,16 +286,34 @@ export default function EventsScreen() {
             ]}
           />
           <View style={{ marginTop: 10 }}>
-            <ToggleRow icon="lock" label="Open to me" hint="Hide anything I can't get into" value={f.openToMe} onChange={(openToMe) => setF({ ...f, openToMe })} />
+            <ToggleRow
+              icon="lock"
+              label="Open to me"
+              hint="Hide anything I can't get into"
+              value={f.openToMe}
+              onChange={(openToMe) => setF({ ...f, openToMe })}
+            />
             <ToggleRow icon="tag" label="Free only" value={f.freeOnly} onChange={(freeOnly) => setF({ ...f, freeOnly })} />
             <ToggleRow icon="walk" label="Walkable" hint="Within ~20 minutes on foot" value={f.walkable} onChange={(walkable) => setF({ ...f, walkable })} />
             <ToggleRow icon="bike" label="Car-free picks" hint="Easy by foot, bike or bus" value={f.carFree} onChange={(carFree) => setF({ ...f, carFree })} />
             <ToggleRow icon="family" label="All-ages" value={f.allAges} onChange={(allAges) => setF({ ...f, allAges })} />
-            <ToggleRow icon="coffee" label="Sober-friendly" hint="Not built around a bar" value={f.soberFriendly} onChange={(soberFriendly) => setF({ ...f, soberFriendly })} />
+            <ToggleRow
+              icon="coffee"
+              label="Sober-friendly"
+              hint="Not built around a bar"
+              value={f.soberFriendly}
+              onChange={(soberFriendly) => setF({ ...f, soberFriendly })}
+            />
             <ToggleRow icon="accessible" label="Accessible venue" value={f.accessible} onChange={(accessible) => setF({ ...f, accessible })} />
             <ToggleRow icon="paw" label="Pet-friendly" value={f.petFriendly} onChange={(petFriendly) => setF({ ...f, petFriendly })} />
             {viewer.mode !== 'student' && (
-              <ToggleRow icon="lock" label="Show UGA-only stuff" hint="Shown greyed out with a lock" value={prefs.showUgaOnly} onChange={(showUgaOnly) => setPrefs({ showUgaOnly })} />
+              <ToggleRow
+                icon="lock"
+                label="Show UGA-only stuff"
+                hint="Shown greyed out with a lock"
+                value={prefs.showUgaOnly}
+                onChange={(showUgaOnly) => setPrefs({ showUgaOnly })}
+              />
             )}
           </View>
         </ScrollView>

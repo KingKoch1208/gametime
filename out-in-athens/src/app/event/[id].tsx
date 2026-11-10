@@ -161,7 +161,7 @@ export default function EventDetail() {
               <Icon name="users" color={c.ivy} size={22} />
               <Txt v="bodySm" style={{ flex: 1 }}>
                 <Txt v="bodySm" style={{ fontWeight: '700' }}>
-                  Locals need a UGA student with them.
+                  {e.guestNote ?? 'Locals need a UGA student with them.'}
                 </Txt>{' '}
                 Going with a friend who’s a student? Tap Going.
               </Txt>
@@ -290,7 +290,7 @@ export default function EventDetail() {
               <Txt v="label" style={{ marginTop: 20, marginBottom: 10 }}>
                 Watch parties nearby
               </Txt>
-              <View style={{ gap: 12 }}>
+              <View style={{ gap: 24 }}>
                 {watchParties.map((w) => (
                   <TicketCard key={w!.id} event={w!} acc={accessFor(w!, viewer)} now={now} />
                 ))}

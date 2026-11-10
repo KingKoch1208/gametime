@@ -13,7 +13,6 @@ import { PlaceCard } from '@/components/PlaceCard';
 import { TicketCard } from '@/components/TicketCard';
 import { Chip, Paper, SectionHeader, Sheet, Txt } from '@/components/ui';
 import { useNow, useWeather } from '@/lib/hooks';
-import { NEAR_RADIUS_KM } from '@/lib/geo';
 import { DAY_LONG, partOfDay, relativeDay, type TimeWindow } from '@/lib/time';
 import { getBoredDeck, getEvent, getEvents, getFeatured, getGuides, getOrg, getPlace, getPlaces } from '@/services/dataService';
 import { useApp } from '@/state/AppState';
@@ -60,29 +59,34 @@ export default function NowScreen() {
     };
     const featured = getFeatured(viewer);
     if (featured) seen.add(featured.item.id);
+    // "Not a bar crowd" is the mission, so it picks first: sober-friendly plans
+    // starting 5pm or later tonight, free ones first, no sports/workouts, no
+    // multi-week classes. Things already underway are left for "Happening".
+    const sober = take(
+      getEvents({ viewer, window: 'tonight', soberFriendly: true, openToMe: true })
+        .filter(
+          (l) =>
+            !l.live &&
+            l.item.start.getHours() >= 17 &&
+            !l.item.series &&
+            !l.item.isAway &&
+            !l.item.interests.some((i) => i === 'sports' || i === 'fitness'),
+        )
+        .sort((a, b) => Number(a.item.price > 0) - Number(b.item.price > 0) || +a.item.start - +b.item.start),
+      3,
+    );
     const happening = take(indoorFirst(getEvents({ viewer, window: win, openToMe: true }).filter((l) => !l.item.isAway)), 8);
     const friends = take(
       getEvents({ viewer, window: 'twoWeeks', openToMe: true }).filter((l) => l.item.friendsGoing.length > 0),
       4,
     );
-    const free = take(indoorFirst(getEvents({ viewer, window: 'week', freeOnly: true, openToMe: true })), 8);
-    const sober = take(
-      getEvents({ viewer, window: 'week', soberFriendly: true, openToMe: true }).filter((l) => l.item.start.getHours() >= 17 || l.live),
-      3,
-    );
-    const fresh = take(
-      getEvents({ viewer, window: 'twoWeeks', openToMe: true }).filter((l) => l.item.isNew),
-      8,
-    );
     const lateFood = getPlaces({ viewer, kind: 'food', foodTags: ['late'], openToMe: true, openNow: true }).slice(0, 3);
     const gameDay = getEvents({ viewer, window: 'weekend', categories: ['sports'], includeAway: true }).find(
       (l) => l.item.opponent && (l.item.isAway || l.item.access === 'ticketed') && l.item.id.startsWith('fb-'),
     );
+    // One number everywhere: the header and the I'm bored button both use the deck.
     const openNear = getBoredDeck(viewer, profile.transport, profile.interests, weather).length;
-    const nearCount =
-      getEvents({ viewer, window: 'now', openToMe: true }).filter((l) => l.km <= NEAR_RADIUS_KM[profile.transport]).length +
-      getPlaces({ viewer, openNow: true, openToMe: true }).filter((l) => l.km <= NEAR_RADIUS_KM[profile.transport]).length;
-    return { happening, free, sober, lateFood, friends, fresh, featured, openNear, nearCount, gameDay };
+    return { happening, sober, lateFood, friends, featured, openNear, gameDay };
     // tick forces recompute after pull-to-refresh
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewer, win, rainy, profile.transport, profile.interests, tick, minuteKey]);
@@ -112,10 +116,27 @@ export default function NowScreen() {
                 <Txt v="bodySm" muted>
                   {DAY_LONG[now.getDay()]} {partOfDay(now)} · {weather.tempF}° {weather.label} ·{' '}
                   <Txt v="bodySm" color={c.brick} style={{ fontWeight: '700' }}>
-                    {data.nearCount} things open near you
+                    {data.openNear} {data.openNear === 1 ? 'thing' : 'things'} open near you
                   </Txt>
                 </Txt>
               </View>
+              {data.gameDay && (
+                <Pressable
+                  accessibilityRole="link"
+                  accessibilityLabel={`Game day ${relativeDay(data.gameDay.item.start, now).toLowerCase()}: ${data.gameDay.item.title}. Watch spots`}
+                  hitSlop={{ top: 12, bottom: 12 }}
+                  onPress={() => router.push(`/event/${data.gameDay!.item.id}`)}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 }}
+                >
+                  <Icon name="football" color={c.text} size={17} />
+                  <Txt v="bodySm" style={{ flex: 1 }}>
+                    <Txt v="bodySm" style={{ fontWeight: '700' }}>
+                      Game day {relativeDay(data.gameDay.item.start, now).toLowerCase()}
+                    </Txt>
+                    {data.gameDay.item.isAway ? ' · Watch parties open to everyone →' : ' · No ticket? Watch spots →'}
+                  </Txt>
+                </Pressable>
+              )}
             </View>
           }
         />
@@ -159,26 +180,7 @@ export default function NowScreen() {
           </Pressable>
         )}
 
-        {data.gameDay && (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Game day: ${data.gameDay.item.title}`}
-            onPress={() => router.push(`/event/${data.gameDay!.item.id}`)}
-            style={{ marginHorizontal: 20, marginTop: 14, flexDirection: 'row', gap: 10, alignItems: 'center', backgroundColor: palette.brick, padding: 12 }}
-          >
-            <Icon name="sports" color={palette.paper} size={22} />
-            <View style={{ flex: 1 }}>
-              <Txt v="label" color={palette.mustard}>
-                Game day · {relativeDay(data.gameDay.item.start, now)}
-              </Txt>
-              <Txt v="bodySm" color={palette.paper}>
-                {data.gameDay.item.title}. {data.gameDay.item.isAway ? 'Watch parties open to everyone →' : 'No ticket? Find a watch spot →'}
-              </Txt>
-            </View>
-          </Pressable>
-        )}
-
-        <BoredButton count={Math.max(data.openNear, 1)} />
+        <BoredButton count={data.openNear} />
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 20, paddingTop: 22 }}>
           {CHIPS.map((ch) => (
@@ -186,7 +188,7 @@ export default function NowScreen() {
           ))}
         </ScrollView>
 
-        <SectionHeader title={SECTION_TITLE[win]} kicker={rainy ? 'Indoor first' : undefined} action="All events" onAction={() => router.push('/events')} />
+        <SectionHeader title={SECTION_TITLE[win]} action="All events" onAction={() => router.push('/events')} />
         {data.happening.length ? (
           <FlatList
             horizontal
@@ -213,6 +215,49 @@ export default function NowScreen() {
             </Txt>
             <TicketCard event={data.featured.item} acc={data.featured.acc} km={data.featured.km} live={data.featured.live} now={now} featuredSlot />
           </View>
+        )}
+
+        {isVisitor && (
+          <View style={{ marginHorizontal: 20, marginTop: 22, flexDirection: 'row', gap: 12, borderWidth: 1.5, borderColor: c.lineStrong, padding: 14 }}>
+            <Icon name="car" color={c.text} size={22} />
+            <View style={{ flex: 1 }}>
+              <Txt v="bodyBold">Parking downtown</Txt>
+              <Txt v="bodySm" muted>
+                City decks on Washington St and College Ave are closest to everything (sample info). Everything downtown is a short walk from there.
+              </Txt>
+            </View>
+          </View>
+        )}
+
+        <SectionHeader title="Not a bar crowd" kicker="Nights out, no hangover" />
+        <View style={{ paddingHorizontal: 20, gap: 24 }}>
+          <Txt v="bodySm" muted style={{ marginTop: -4, marginBottom: 2 }}>
+            Sober-friendly plans tonight: shows, games, late eats and things with no bar line.
+          </Txt>
+          {data.sober.length === 0 && (
+            <Txt v="bodySm" muted>
+              Nothing sober-friendly left tonight. Tap below for the rest of the week.
+            </Txt>
+          )}
+          {data.sober.map((l) => (
+            <TicketCard key={l.item.id} event={l.item} acc={l.acc} km={l.km} live={l.live} now={now} showFriends={false} />
+          ))}
+          <Pressable accessibilityRole="link" hitSlop={{ top: 14, bottom: 14 }} onPress={() => router.push({ pathname: '/events', params: { sober: '1' } })}>
+            <Txt v="labelSm" color={c.brick}>
+              All sober-friendly plans this week →
+            </Txt>
+          </Pressable>
+        </View>
+        {lateNight && data.lateFood.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 14, paddingTop: 22, paddingBottom: 4, paddingHorizontal: 20 }}
+          >
+            {data.lateFood.map((l) => (
+              <PlaceCard key={l.item.id} place={l.item} acc={l.acc} km={l.km} width={230} now={now} compact />
+            ))}
+          </ScrollView>
         )}
 
         {plans.length > 0 && (
@@ -251,7 +296,7 @@ export default function NowScreen() {
           <>
             <SectionHeader title="Your friends are going" action="Friends" onAction={() => router.push('/profile')} />
             <View style={{ paddingHorizontal: 20, gap: 10 }}>
-              {data.friends.slice(0, 4).map((l) => (
+              {data.friends.map((l) => (
                 <Pressable
                   key={l.item.id}
                   onPress={() => router.push(`/event/${l.item.id}`)}
@@ -274,93 +319,15 @@ export default function NowScreen() {
           </>
         )}
 
-        <SectionHeader title="Free this week" kicker="$0.00" action="See all" onAction={() => router.push({ pathname: '/events', params: { free: '1' } })} />
-        <FlatList
-          horizontal
-          data={data.free}
-          keyExtractor={(l) => l.item.id}
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 20, gap: 14, paddingVertical: 10 }}
-          renderItem={({ item: l }) => <TicketCard event={l.item} acc={l.acc} km={l.km} live={l.live} width={CARD_W} now={now} showFriends={false} />}
-        />
-
-        <SectionHeader title="Not a bar crowd" kicker="Nights out, no hangover" />
-        <View style={{ paddingHorizontal: 20, gap: 12 }}>
-          <Txt v="bodySm" muted style={{ marginTop: -4, marginBottom: 2 }}>
-            Sober-friendly plans after dark: shows, games, late eats and things with no bar line.
-          </Txt>
-          {data.sober.map((l) => (
-            <TicketCard key={l.item.id} event={l.item} acc={l.acc} km={l.km} live={l.live} now={now} showFriends={false} />
-          ))}
-          <Pressable accessibilityRole="link" hitSlop={{ top: 14, bottom: 14 }} onPress={() => router.push({ pathname: '/events', params: { sober: '1' } })}>
-            <Txt v="labelSm" color={c.brick}>
-              All sober-friendly plans this week →
-            </Txt>
-          </Pressable>
-        </View>
-        {lateNight && data.lateFood.length > 0 && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 14, paddingTop: 22, paddingBottom: 4, paddingHorizontal: 20 }}
-          >
-            {data.lateFood.map((l) => (
-              <PlaceCard key={l.item.id} place={l.item} acc={l.acc} km={l.km} width={230} now={now} compact />
-            ))}
-          </ScrollView>
-        )}
-
-        {data.fresh.length > 0 && (
-          <>
-            <SectionHeader title="New this week" kicker="Just stapled up" />
-            <FlatList
-              horizontal
-              data={data.fresh}
-              keyExtractor={(l) => l.item.id}
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 20, gap: 14, paddingVertical: 10 }}
-              renderItem={({ item: l }) => <TicketCard event={l.item} acc={l.acc} km={l.km} live={l.live} width={CARD_W} now={now} />}
-            />
-          </>
-        )}
-
-        <SectionHeader title="Curated collections" kicker="Zines by locals" action="Explore" onAction={() => router.push('/explore')} />
+        <SectionHeader title="Guides" action="Explore" onAction={() => router.push('/explore')} />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}>
           {getGuides(viewer.mode).map((g) => (
             <GuideCover key={g.id} guide={g} />
           ))}
         </ScrollView>
 
-        {isVisitor && (
-          <View style={{ marginHorizontal: 20, marginTop: 28, flexDirection: 'row', gap: 12, borderWidth: 1.5, borderColor: c.lineStrong, padding: 14 }}>
-            <Icon name="car" color={c.text} size={22} />
-            <View style={{ flex: 1 }}>
-              <Txt v="bodyBold">Parking downtown</Txt>
-              <Txt v="bodySm" muted>
-                City decks on Washington St and College Ave are closest to everything (sample info). Everything downtown is a short walk from there.
-              </Txt>
-            </View>
-          </View>
-        )}
+        <GetHomeSafe highlight={lateNight} mode={profile.mode} hour={now.getHours()} />
 
-        <GetHomeSafe highlight={lateNight} mode={profile.mode} />
-
-        <View style={{ paddingHorizontal: 20, marginTop: 24, flexDirection: 'row', gap: 10 }}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Add something to the guide"
-            onPress={() => router.push('/submit')}
-            style={{ flex: 1, borderWidth: 1.5, borderStyle: 'dashed', borderColor: c.lineStrong, padding: 14, alignItems: 'center', gap: 6 }}
-          >
-            <Icon name="megaphone" color={c.brick} size={24} />
-            <Txt v="label" center>
-              Add something
-            </Txt>
-            <Txt v="caption" muted center>
-              Know about a show, market or pickup game? Post it.
-            </Txt>
-          </Pressable>
-        </View>
       </ScrollView>
     </Paper>
   );
@@ -375,8 +342,12 @@ function greeting(d: Date): string {
   return 'Night owl';
 }
 
-function GetHomeSafe({ highlight, mode }: { highlight: boolean; mode: 'student' | 'local' | 'visitor' }) {
+// UGA's live bus tracker (Campus Transit). The UGA app shows the same thing plus Athens Transit.
+const BUS_TRACKER_URL = 'https://routes.uga.edu';
+
+function GetHomeSafe({ highlight, mode, hour }: { highlight: boolean; mode: 'student' | 'local' | 'visitor'; hour: number }) {
   const { c } = useTheme();
+  const rideSmartHours = hour >= 22 || hour < 6;
   return (
     <View style={{ marginHorizontal: 20, marginTop: 28 }}>
       <View
@@ -394,14 +365,38 @@ function GetHomeSafe({ highlight, mode }: { highlight: boolean; mode: 'student' 
           </Txt>
         </View>
         <View style={{ gap: 8, marginTop: 10 }}>
+          {mode === 'student' && (
+            <View
+              style={{
+                borderWidth: 1.5,
+                borderColor: highlight ? palette.mustard : c.ivy,
+                padding: 12,
+                gap: 4,
+                marginBottom: 2,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Icon name="car" color={highlight ? palette.mustard : c.ivy} size={18} />
+                <Txt v="bodyBold" color={highlight ? palette.paper : c.text} style={{ flex: 1 }}>
+                  UGA Ride Smart{rideSmartHours ? ' · running now' : ' · from 10pm'}
+                </Txt>
+              </View>
+              <Txt v="bodySm" color={highlight ? '#CFC5B1' : c.textMuted}>
+                Lyft rides 10pm–6am. UGA covers half, up to $5 a ride, four rides a month. Rides must start or end on campus. Open Lyft and pick the
+                UGA Ride Smart program.
+              </Txt>
+              <Txt v="caption" color={highlight ? '#CFC5B1' : c.textMuted}>
+                Terms from UGA’s launch announcement; check current terms.
+              </Txt>
+            </View>
+          )}
           {(mode === 'student'
             ? [
-                ['bus', 'Night bus & campus transit', 'Live arrivals coming soon (placeholder).'],
-                ['car', 'Campus safe-ride', 'Hours and the number to call (placeholder).'],
+                ['bus', 'Night bus & campus transit', 'Live arrivals in the UGA app or routes.uga.edu.'],
                 ['users', 'Buddy check', 'Share your ETA with a friend from Plans.'],
               ]
             : [
-                ['bus', 'Athens-Clarke Transit routes', 'Late routes and times (placeholder).'],
+                ['bus', 'Athens-Clarke Transit', 'Live Athens Transit arrivals are in the UGA app’s bus tracker too.'],
                 ['car', 'Rideshare pickup spots downtown', 'Where drivers can actually stop (placeholder).'],
                 ['users', 'Buddy check', 'Share your ETA with a friend from Plans.'],
               ]
@@ -418,6 +413,19 @@ function GetHomeSafe({ highlight, mode }: { highlight: boolean; mode: 'student' 
               </View>
             </View>
           ))}
+          {mode === 'student' && (
+            <Pressable
+              accessibilityRole="link"
+              accessibilityLabel="Next bus: open UGA's live bus tracker"
+              hitSlop={{ top: 12, bottom: 12 }}
+              onPress={() => Linking.openURL(BUS_TRACKER_URL)}
+              style={{ marginTop: 4 }}
+            >
+              <Txt v="labelSm" color={highlight ? palette.mustard : c.brick}>
+                Next bus · live tracker →
+              </Txt>
+            </Pressable>
+          )}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Call 911 in an emergency"

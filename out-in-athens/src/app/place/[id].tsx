@@ -14,7 +14,7 @@ import { Stamp } from '@/components/Stamp';
 import { TicketCard } from '@/components/TicketCard';
 import { TravelBadges } from '@/components/TravelBadges';
 import { Button, IconButton, Paper, TearLine, Txt } from '@/components/ui';
-import { accessFor, ACCESS_LABEL } from '@/lib/access';
+import { accessFor, ACCESS_LABEL, goodForTags } from '@/lib/access';
 import { openDirections } from '@/lib/directions';
 import { haptic, sound } from '@/lib/feedback';
 import { MOCK_ME } from '@/lib/geo';
@@ -102,6 +102,24 @@ export default function PlaceDetail() {
             {stamped && <Stamp kind="verified" text="In your passport" size="md" delay={180} />}
           </View>
 
+          {acc.needsStudent && (
+            <View style={{ borderWidth: 1.5, borderColor: c.ivy, padding: 14, marginTop: 16, flexDirection: 'row', gap: 10 }}>
+              <Icon name="users" color={c.ivy} size={22} />
+              <Txt v="bodySm" style={{ flex: 1 }}>
+                <Txt v="bodySm" style={{ fontWeight: '700' }}>
+                  {p.guestNote ?? 'Locals need a UGA student with them.'}
+                </Txt>{' '}
+                A student signs you in at the desk; bring a photo ID. We won’t suggest it unless you’re going with one.
+              </Txt>
+            </View>
+          )}
+          {p.naDrinks && (
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 12, alignItems: 'center' }}>
+              <Icon name="check" color={c.ivy} size={16} />
+              <Txt v="bodySm">Good NA drinks: real mocktails or NA beer on the menu.</Txt>
+            </View>
+          )}
+
           {locked ? (
             <View style={{ borderWidth: 1.5, borderColor: c.brick, padding: 14, marginTop: 16, flexDirection: 'row', gap: 10 }}>
               <Icon name="lock" color={c.brick} size={22} />
@@ -187,7 +205,7 @@ export default function PlaceDetail() {
             Good for
           </Txt>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
-            {p.goodFor.map((g) => (
+            {goodForTags(p.goodFor, profile.mode).map((g) => (
               <Pill key={g} icon="check" text={g} />
             ))}
             {p.accessibleVenue && <Pill icon="accessible" text="Accessible" />}
@@ -242,7 +260,7 @@ export default function PlaceDetail() {
               <Txt v="label" style={{ marginTop: 24, marginBottom: 10 }}>
                 Coming up here
               </Txt>
-              <View style={{ gap: 12 }}>
+              <View style={{ gap: 24 }}>
                 {events.slice(0, 4).map((e) => {
                   const a = accessFor(e, viewer);
                   return a.visible ? <TicketCard key={e.id} event={e} acc={a} now={now} /> : null;

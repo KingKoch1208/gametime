@@ -108,7 +108,7 @@ export default function PartnerPortal() {
               <View key={l as string} style={{ flexDirection: 'row', gap: 4, alignItems: 'center' }}>
                 <View style={{ width: 10, height: 10, backgroundColor: col as string }} />
                 <Txt v="caption">
-                  {l as string} {Math.round((v as number) * 100)}%
+                  {l as string} {v as number}%
                 </Txt>
               </View>
             ))}

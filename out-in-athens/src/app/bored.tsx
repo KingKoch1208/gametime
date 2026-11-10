@@ -220,7 +220,7 @@ export default function BoredScreen() {
               title={deck.length ? 'That’s the whole deck.' : 'Quiet hour.'}
               body={`${savedCount ? `You saved ${savedCount}. ` : ''}${deck.length ? '' : 'Not much is open near you right now. '}Here’s what opens next. (The Waffle House on Broad never closes, though.)`}
             />
-            <View style={{ alignSelf: 'stretch', gap: 12, marginBottom: 18 }}>
+            <View style={{ alignSelf: 'stretch', gap: 24, marginBottom: 18 }}>
               {upcoming.map((l) => (
                 <TicketCard key={l.item.id} event={l.item} acc={l.acc} km={l.km} now={now} showFriends={false} />
               ))}

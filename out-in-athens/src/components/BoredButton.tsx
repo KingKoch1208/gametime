@@ -83,7 +83,7 @@ export function BoredButton({ count }: { count: number }) {
                 I’m bored.
               </Txt>
               <Txt v="bodySm" color={palette.paper} style={{ opacity: 0.9, marginTop: 2 }}>
-                Deal me {count} things open right now, near me.
+                {count > 0 ? `Deal me ${count} ${count === 1 ? 'thing' : 'things'} open right now, near me.` : 'Quiet hour. See what opens next.'}
               </Txt>
             </View>
             <View

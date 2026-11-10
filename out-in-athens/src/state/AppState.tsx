@@ -7,6 +7,7 @@ import { createContext, type ReactNode, useCallback, useContext, useEffect, useM
 
 import type { Access, AccessMode, AgeRange, EventCategory, Interest, LatLng, ReviewTag, Transport } from '@/data/types';
 import type { Viewer } from '@/lib/access';
+import { clockParam, defaultDemoTime, demoTimeFor } from '@/lib/demoClock';
 
 export type Profile = {
   name: string;
@@ -72,6 +73,7 @@ type Persisted = {
   myTags: Record<string, ReviewTag[]>;
   reported: string[];
   featureRequests: string[];
+  done101: string[]; // Athens 101 items ticked by hand
 };
 
 const DEFAULT: Persisted = {
@@ -82,7 +84,7 @@ const DEFAULT: Persisted = {
     locationSharing: 'off',
     sharingAsked: false,
     pitchHintSeen: false,
-    demoTime: null,
+    demoTime: defaultDemoTime(),
     theme: 'system',
     textScale: 1,
     reduceMotion: false,
@@ -102,6 +104,7 @@ const DEFAULT: Persisted = {
   myTags: {},
   reported: [],
   featureRequests: [],
+  done101: [],
 };
 
 const KEY = 'out-in-athens:v1';
@@ -122,6 +125,7 @@ type Ctx = Persisted & {
   toggleTag: (id: string, tag: ReviewTag) => void;
   report: (id: string) => void;
   requestFeature: (id: string) => void;
+  toggle101: (id: string) => void;
   resetAll: () => void;
 };
 
@@ -147,6 +151,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       })
       .catch(() => {})
       .finally(() => {
+        // A ?clock= link param wins over whatever this browser saved.
+        const k = clockParam();
+        if (k) setState((s) => ({ ...s, prefs: { ...s.prefs, demoTime: demoTimeFor(k) } }));
         loaded.current = true;
         setReady(true);
       });
@@ -192,6 +199,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     [],
   );
   const addSubmission = useCallback((sub: Submission) => setState((s) => ({ ...s, submissions: [sub, ...s.submissions] })), []);
+  const toggle101 = useCallback((id: string) => setState((s) => ({ ...s, done101: toggleIn(s.done101 ?? [], id) })), []);
   const toggleFollow = useCallback((orgId: string) => setState((s) => ({ ...s, following: toggleIn(s.following, orgId) })), []);
   const toggleTag = useCallback(
     (id: string, tag: ReviewTag) =>
@@ -239,6 +247,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       toggleTag,
       report,
       requestFeature,
+      toggle101,
       resetAll,
     }),
     [
@@ -258,6 +267,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       toggleTag,
       report,
       requestFeature,
+      toggle101,
       resetAll,
     ],
   );

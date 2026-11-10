@@ -6,7 +6,7 @@ import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
 import Svg, { Circle, Defs, Path, Pattern, Rect } from 'react-native-svg';
 
 import type { Accent, Place } from '@/data/types';
-import type { AccessResult } from '@/lib/access';
+import { type AccessResult, goodForTags } from '@/lib/access';
 import { haptic } from '@/lib/feedback';
 import { MOCK_ME } from '@/lib/geo';
 import { openStatus } from '@/lib/time';
@@ -14,7 +14,7 @@ import { useApp } from '@/state/AppState';
 import { useTheme } from '@/theme/ThemeProvider';
 import { accentFill, onAccent } from '@/theme/tokens';
 import { CATEGORY_ICON, Icon, type IconName } from './Icon';
-import { Stamp } from './Stamp';
+import { cardStamp, DotLabel, Stamp } from './Stamp';
 import { TravelBadges } from './TravelBadges';
 import { Txt } from './ui';
 import { now as clockNow } from '@/services/dataService';
@@ -124,11 +124,14 @@ type Props = { place: Place; acc: AccessResult; km?: number; width?: number; now
 
 function PlaceCardImpl({ place: p, acc, width, now = clockNow(), compact }: Props) {
   const { c } = useTheme();
-  const { savedPlaces, toggleSavedPlace, checkins } = useApp();
+  const { savedPlaces, toggleSavedPlace, checkins, profile } = useApp();
   const saved = savedPlaces.includes(p.id);
   const locked = !acc.canAttend;
   const status = openStatus(p.hours, now);
   const seed = p.id.length;
+  const stamp = cardStamp(acc);
+  const textColor = locked ? c.locked : undefined;
+  const goodFor = goodForTags(p.goodFor, profile.mode);
 
   return (
     <Pressable
@@ -137,13 +140,12 @@ function PlaceCardImpl({ place: p, acc, width, now = clockNow(), compact }: Prop
       onPress={() => router.push(`/place/${p.id}`)}
       style={({ pressed }) => [{ width, transform: [{ scale: pressed ? 0.985 : 1 }, { rotate: `${((seed % 3) - 1) * 0.4}deg` }] }]}
     >
-      <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.lineStrong, opacity: locked ? 0.55 : 1 }]}>
-        <Tape rotate={(seed % 2 ? -1 : 1) * 4} />
+      <View style={[styles.card, { backgroundColor: c.surface, borderColor: locked ? c.locked : c.lineStrong }]}>
         <PhotoBlock accent={locked ? 'ink' : p.accent} icon={placeIcon(p)} height={compact ? 84 : 112} seed={seed} />
         <View style={{ padding: 12, gap: 4 }}>
           <View style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-start' }}>
             <View style={{ flex: 1 }}>
-              <Txt v="serif" numberOfLines={1}>
+              <Txt v="serif" numberOfLines={1} color={textColor}>
                 {p.name}
               </Txt>
               <Txt v="bodySm" muted numberOfLines={1}>
@@ -170,15 +172,16 @@ function PlaceCardImpl({ place: p, acc, width, now = clockNow(), compact }: Prop
               </Pressable>
             )}
           </View>
-          {!compact && (
-            <Txt v="caption" muted numberOfLines={1}>
-              Good for: {p.goodFor.join(', ')}
+          {!compact && goodFor.length > 0 && (
+            <Txt v="caption" muted={!locked} color={textColor} numberOfLines={1}>
+              Good for: {goodFor.join(', ')}
             </Txt>
           )}
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4, alignItems: 'center' }}>
-            <Stamp kind={acc.stamp} text={acc.stamp === 'lock' ? acc.lockReason : undefined} animate={false} />
-            {acc.perk && <Stamp kind="perk" animate={false} />}
-            {checkins[p.id] && <Stamp kind="verified" text="Stamped" animate={false} />}
+            {stamp && <Stamp kind={stamp} text={stamp === 'lock' ? acc.lockReason : undefined} animate={false} />}
+            {acc.perk && <DotLabel label="Dawg perk" />}
+            {p.naDrinks && <DotLabel label="Good NA drinks" color={c.ivy} />}
+            {checkins[p.id] && <DotLabel label="In your passport" color={c.ivy} />}
           </View>
           {!compact && !locked && <TravelBadges to={p.coords} from={MOCK_ME} style={{ marginTop: 6 }} />}
         </View>

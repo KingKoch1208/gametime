@@ -32,6 +32,7 @@ const CATS: { key: EventCategory | 'all'; label: string }[] = [
 
 type F = {
   freeOnly: boolean;
+  newOnly: boolean;
   openToMe: boolean;
   walkable: boolean;
   setting: 'any' | 'indoor' | 'outdoor';
@@ -46,6 +47,7 @@ type F = {
 
 const DEFAULT_F: F = {
   freeOnly: false,
+  newOnly: false,
   openToMe: false,
   walkable: false,
   setting: 'any',
@@ -92,6 +94,7 @@ export default function EventsScreen() {
     window: view === 'calendar' ? undefined : f.window,
     day: view === 'calendar' ? day : undefined,
     freeOnly: f.freeOnly,
+    newOnly: f.newOnly,
     openToMe: f.openToMe,
     walkable: f.walkable,
     setting: f.setting === 'any' ? null : f.setting,
@@ -111,6 +114,12 @@ export default function EventsScreen() {
   const activeCount = Object.entries(f).filter(([k, v]) => v !== (DEFAULT_F as Record<string, unknown>)[k]).length;
   const days = Array.from({ length: 14 }, (_, i) => addDays(startOfDay(now), i));
   const hiddenUga = viewer.mode !== 'student' && !prefs.showUgaOnly;
+  // Search never hides a match silently: say how many UGA-only results it held back.
+  const hiddenMatches = useMemo(
+    () => (hiddenUga && q.trim() ? getEvents({ ...query, viewer: { ...viewer, showUgaOnly: true } }).length - list.length : 0),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [hiddenUga, queryKey, list.length],
+  );
 
   return (
     <Paper>
@@ -120,7 +129,7 @@ export default function EventsScreen() {
         keyExtractor={(l) => l.item.id}
         refreshControl={control}
         contentContainerStyle={{ paddingBottom: 40 }}
-        ItemSeparatorComponent={() => <View style={{ height: 14 }} />}
+        ItemSeparatorComponent={() => <View style={{ height: 24 }} />}
         ListHeaderComponent={
           <View>
             <TabHeader
@@ -134,7 +143,7 @@ export default function EventsScreen() {
               }
               subtitle={
                 <Txt v="bodySm" muted style={{ marginTop: 2 }}>
-                  {list.length} things over the next two weeks, filtered for{' '}
+                  {list.length} {list.length === 1 ? 'thing' : 'things'} {f.window === 'week' ? 'this week' : 'over the next two weeks'}, filtered for{' '}
                   {profile.mode === 'student' ? 'a UGA student' : profile.mode === 'local' ? 'an Athens local' : 'a visitor'}.
                 </Txt>
               }
@@ -184,24 +193,43 @@ export default function EventsScreen() {
               </ScrollView>
             )}
 
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingTop: 14, paddingBottom: 14 }}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingTop: 14, paddingBottom: 14 }}
+            >
               <Button small kind="secondary" icon="sliders" label={activeCount ? `Filters · ${activeCount}` : 'Filters'} onPress={() => setSheet(true)} />
-              <Chip small label="Free" active={f.freeOnly} onPress={() => setF({ ...f, freeOnly: !f.freeOnly })} accent="ivy" />
+              <Chip
+                small
+                label="Free this week"
+                active={f.freeOnly && f.window === 'week'}
+                onPress={() =>
+                  setF(f.freeOnly && f.window === 'week' ? { ...f, freeOnly: false, window: 'twoWeeks' } : { ...f, freeOnly: true, window: 'week' })
+                }
+                accent="ivy"
+              />
+              <Chip small label="New this week" active={f.newOnly} onPress={() => setF({ ...f, newOnly: !f.newOnly })} accent="ivy" />
               <Chip small label="Open to me" active={f.openToMe} onPress={() => setF({ ...f, openToMe: !f.openToMe })} accent="ivy" />
               <Chip small label="Sober-friendly" active={f.soberFriendly} onPress={() => setF({ ...f, soberFriendly: !f.soberFriendly })} accent="ivy" />
-            </View>
+            </ScrollView>
             {hiddenUga && (
               <Pressable
                 onPress={() => setPrefs({ showUgaOnly: true })}
                 accessibilityRole="button"
-                accessibilityLabel="Some UGA-only events are hidden. Tap to show them greyed out."
+                accessibilityLabel={
+                  hiddenMatches > 0
+                    ? `${hiddenMatches} UGA-only ${hiddenMatches === 1 ? 'result' : 'results'} hidden. Tap to show.`
+                    : 'Some UGA-only events are hidden. Tap to show them greyed out.'
+                }
                 style={{ marginHorizontal: 20, marginBottom: 14, flexDirection: 'row', gap: 8, alignItems: 'center' }}
               >
                 <Icon name="lock" color={c.textMuted} size={15} />
                 <Txt v="caption" muted style={{ flex: 1 }}>
-                  UGA-ID-only events are hidden.{' '}
+                  {hiddenMatches > 0
+                    ? `${hiddenMatches} UGA-only ${hiddenMatches === 1 ? 'result' : 'results'} hidden · `
+                    : 'UGA-ID-only events are hidden. '}
                   <Txt v="caption" color={c.brick}>
-                    Show them (locked)
+                    {hiddenMatches > 0 ? 'Show it' : 'Show them (locked)'}
                   </Txt>
                 </Txt>
               </Pressable>
@@ -233,7 +261,9 @@ export default function EventsScreen() {
               body={
                 view === 'calendar'
                   ? 'Slow day on the poles. Try another day, or loosen the filters.'
-                  : 'Too many filters? Even the 40 Watt takes a night off sometimes.'
+                  : hiddenMatches > 0
+                    ? `Only UGA-only events match "${q.trim()}". Tap "Show it" above to see them locked.`
+                    : 'Too many filters? Even the 40 Watt takes a night off sometimes.'
               }
             />
           )

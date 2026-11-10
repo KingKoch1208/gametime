@@ -190,7 +190,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* My plans */}
-        <SectionHeader title="My plans" kicker="Calendar" />
+        <SectionHeader title="My plans" />
         <View style={{ paddingHorizontal: 20, gap: 0 }}>
           {agenda.length ? (
             agenda.map((a, i) => (
@@ -228,7 +228,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* Saved */}
-        <SectionHeader title="Saved" kicker={`${savedE.length + savedP.length} things`} />
+        <SectionHeader title="Saved" />
         <View style={{ paddingHorizontal: 20, gap: 8 }}>
           {[
             ...savedE.map((e) => ({
@@ -291,7 +291,7 @@ export default function ProfileScreen() {
         </ScrollView>
 
         {/* Friends */}
-        <SectionHeader title="Friends" kicker="Mock friends" />
+        <SectionHeader title="Friends" />
         <View style={{ paddingHorizontal: 20 }}>
           <Txt v="label" style={{ marginBottom: 8 }}>
             Share where you are with friends
@@ -327,7 +327,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* Orgs */}
-        <SectionHeader title="Following" kicker="Orgs & partners" />
+        <SectionHeader title="Following" />
         <View style={{ paddingHorizontal: 20, gap: 8 }}>
           {getOrgs().map((o) => {
             const on = following.includes(o.id);
@@ -451,7 +451,7 @@ export default function ProfileScreen() {
           <ToggleRow
             icon="megaphone"
             label="Pitch Mode"
-            hint="Floating Student ↔ Local switch for demos (or long-press the logo)"
+            hint="Student · Local · Visitor switch in the header for demos (or long-press the logo)"
             value={prefs.pitchMode}
             onChange={() => togglePitchMode(prefs, setPrefs)}
           />
@@ -472,7 +472,7 @@ export default function ProfileScreen() {
             ]}
           />
           <Txt v="caption" muted style={{ marginTop: 6 }}>
-            Pins the sample schedule to one moment so a pitch looks the same whenever you open the link.
+            Pins the sample schedule to one moment. The shared web link starts everyone on Friday 6:30pm; add ?clock=tue (or sat, live) to the link to start somewhere else.
           </Txt>
         </View>
 

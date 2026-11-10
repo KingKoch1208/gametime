@@ -1,9 +1,9 @@
 // Rubber-stamp badges: FREE, OPEN TO ALL, UGA ID, 21+, DAWG PERK, LOCK…
 // Slightly rotated, double-ruled border, stamped on with a little spring.
 import { useEffect, useState } from 'react';
-import { Animated, StyleSheet, View, type ViewStyle } from 'react-native';
+import { Animated, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 
-import { STAMP_TEXT, type StampKind } from '@/lib/access';
+import { type AccessResult, STAMP_TEXT, type StampKind } from '@/lib/access';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, palette } from '@/theme/tokens';
 import { Icon, type IconName } from './Icon';
@@ -115,3 +115,27 @@ const styles = StyleSheet.create({
   outer: { borderWidth: 1.5, borderRadius: 2 },
   inner: { borderWidth: 0.75, borderRadius: 1, flexDirection: 'row', alignItems: 'center', gap: 3 },
 });
+
+// One loud thing per card: a rotated stamp is only for access limits (plus the
+// labeled Featured slot). FREE / OPEN TO ALL are the default, so they get no stamp.
+const ACCESS_STAMPS: StampKind[] = ['uga', 'lock', 'guest', '21', '18', 'ticket'];
+
+/** The single stamp a card should show, or null. */
+export function cardStamp(acc: AccessResult, featuredSlot = false): StampKind | null {
+  if (ACCESS_STAMPS.includes(acc.stamp)) return acc.stamp;
+  return featuredSlot ? 'featured' : null;
+}
+
+/** Quiet marker for perks and picks: a small dot plus an Oswald label. Not a stamp. */
+export function DotLabel({ label, color }: { label: string; color?: string }) {
+  const { c } = useTheme();
+  const dot = color ?? c.mustard;
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }} accessible accessibilityLabel={label}>
+      <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: dot }} />
+      <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: fonts.label, fontSize: 10.5, letterSpacing: 1, color: c.text }}>
+        {label.toUpperCase()}
+      </Text>
+    </View>
+  );
+}

@@ -86,7 +86,11 @@ export default function OrgScreen() {
             Upcoming
           </Txt>
           {events.length ? (
-            events.map(({ e, acc }) => <TicketCard key={e.id} event={e} acc={acc} now={now} />)
+            <View style={{ gap: 24, marginTop: 8 }}>
+              {events.map(({ e, acc }) => (
+                <TicketCard key={e.id} event={e} acc={acc} now={now} />
+              ))}
+            </View>
           ) : (
             <Txt v="bodySm" muted>
               Nothing on the calendar right now.

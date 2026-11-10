@@ -116,6 +116,7 @@ export const FOOD: Place[] = [
   }),
   food({
     id: 'taqueria-del-sol',
+    naDrinks: true, // sample: real mocktails / NA beer on the menu
     name: 'Taqueria del Sol',
     foodKind: 'restaurant',
     foodTags: ['cheap', 'gf'],
@@ -190,6 +191,7 @@ export const FOOD: Place[] = [
   }),
   food({
     id: 'hendershots',
+    naDrinks: true, // sample: real mocktails / NA beer on the menu
     name: "Hendershot's",
     foodKind: 'cafe',
     foodTags: ['coffee'],
@@ -288,6 +290,7 @@ export const FOOD: Place[] = [
   }),
   food({
     id: 'collective-harvest',
+    naDrinks: true, // sample: real mocktails / NA beer on the menu
     name: 'Collective Harvest Kitchen',
     foodKind: 'restaurant',
     foodTags: ['vegan', 'healthy', 'gf', 'vegetarian'],

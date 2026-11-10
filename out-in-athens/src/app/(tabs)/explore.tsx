@@ -143,14 +143,14 @@ export default function ExploreScreen() {
               <Icon name="chevronRight" color={palette.paper} size={22} />
             </Pressable>
 
-            <SectionHeader title="Curated guides" kicker="Editor’s picks" />
+            <SectionHeader title="Curated guides" />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}>
               {getGuides(viewer.mode).map((g) => (
                 <GuideCover key={g.id} guide={g} />
               ))}
             </ScrollView>
 
-            <SectionHeader title={cat ? CATS.find((x) => x.key === cat)!.label : 'All spots'} kicker={`${places.length} places`} />
+            <SectionHeader title={cat ? CATS.find((x) => x.key === cat)!.label : 'All spots'} />
             <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 20, marginBottom: 16 }}>
               <Chip small icon="clock" label="Open now" active={openNow} onPress={() => setOpenNow(!openNow)} accent="ivy" />
               <Chip small icon="bike" label="Car-free picks" active={carFree} onPress={() => setCarFree(!carFree)} accent="ivy" />

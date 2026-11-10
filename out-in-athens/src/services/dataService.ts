@@ -10,7 +10,7 @@ import { PLACES } from '@/data/places';
 import { FRIENDS, GUIDES, ORGS } from '@/data/social';
 import type { AthensEvent, EventCategory, ExploreCategory, FoodTag, Friend, Guide, Interest, LatLng, Org, Place, Transport, Weather } from '@/data/types';
 import { accessFor, type AccessResult, recommendable, type Viewer } from '@/lib/access';
-import { distanceKm, isCarFree, isWalkable, MOCK_ME, NEAR_RADIUS_KM, travelTimes } from '@/lib/geo';
+import { distanceKm, isCarFree, isWalkable, MOCK_ME, NEAR_RADIUS_KM } from '@/lib/geo';
 import { isLive, isOpenAt, overlaps, sameDay, type TimeWindow, windowRange } from '@/lib/time';
 
 export type Listed<T> = {
@@ -72,6 +72,7 @@ export type EventFilters = {
   window?: TimeWindow;
   day?: Date;
   freeOnly?: boolean;
+  newOnly?: boolean;
   openToMe?: boolean;
   walkable?: boolean;
   setting?: 'indoor' | 'outdoor' | null;
@@ -100,6 +101,7 @@ export function getEvents(f: EventFilters): Listed<AthensEvent>[] {
       if (range && !overlaps(e.start, e.end, range)) return false;
       if (f.day && !sameDay(e.start, f.day)) return false;
       if (f.freeOnly && e.price > 0) return false;
+      if (f.newOnly && !e.isNew) return false;
       if (f.maxPrice != null && e.price > f.maxPrice) return false;
       if (f.walkable && !isWalkable(me, e.coords)) return false;
       if (f.carFree && !isCarFree(me, e.coords)) return false;
@@ -138,13 +140,12 @@ export function getEventsByOrg(orgId: string): AthensEvent[] {
 
 export function getFeatured(viewer: Viewer): Listed<AthensEvent> | undefined {
   // TODO: backend — paid placement from the Partner Portal. Always labeled "Featured".
-  // Only a partner org can buy the slot, and the caption names who paid.
-  const eligible = (e: AthensEvent) => {
-    const org = e.orgId ? getOrg(e.orgId) : undefined;
-    return !!org && org.kind !== 'club' && org.kind !== 'media';
-  };
-  const list = getEvents({ viewer, openToMe: true, window: 'twoWeeks' }).filter((l) => eligible(l.item));
-  return list.find((l) => l.item.featured) ?? list[0];
+  // Only an event flagged featured by a partner org qualifies, and the caption
+  // names that org. No fallback: if nothing qualifies, the slot is hidden.
+  return getEvents({ viewer, openToMe: true, window: 'twoWeeks' }).find((l) => {
+    const org = l.item.orgId ? getOrg(l.item.orgId) : undefined;
+    return !!l.item.featured && org?.kind === 'partner';
+  });
 }
 
 // ——— Places & food ———
@@ -288,17 +289,33 @@ export function getWeather(t: Date, override: 'auto' | 'rain' | 'clear'): Weathe
 
 export function getOrgAnalytics(orgId: string) {
   // SAMPLE analytics, derived from each org's own listings so partners differ.
+  // Built so the numbers agree with each other: the daily bars sum to the Views
+  // tile, listing views sum to the same total, and the audience split is 100%.
   const evs = getEventsByOrg(orgId);
   const seed = hash(orgId);
   const me = myLocation();
-  const rows = evs.map((e) => {
-    const t = travelTimes(me, e.coords);
-    // Share of "Directions" taps that would be walk / bike / bus, from how close it is.
-    const carFree = Math.max(0.15, Math.min(0.92, 1 - Math.min(t.walk, t.bike * 2.5, t.bus * 1.6) / 70));
-    return { event: e, views: e.interested * 9 + 140, saves: Math.round(e.interested * 0.7), going: e.going, carFree };
-  });
+
+  // 1. Seven daily view counts first…
   const base = 300 + (seed % 400);
   const week = Array.from({ length: 7 }, (_, i) => Math.round(base * (0.55 + 0.45 * Math.abs(Math.sin(seed * 0.7 + i * (0.8 + (seed % 5) * 0.15)))) + i * 10));
+  // 2. …then the total is their sum, and listing views are that total split by interest.
+  const totalViews = week.reduce((sum, v) => sum + v, 0);
+  const listingViews = splitInts(
+    totalViews,
+    evs.map((e) => e.interested * 9 + 140),
+  );
+
+  const used = new Set<number>();
+  const rows = evs.map((e, i) => {
+    const views = listingViews[i] ?? 0;
+    return {
+      event: e,
+      views,
+      saves: Math.round(views * (0.06 + (hash(e.id) % 5) / 100)),
+      going: Math.min(e.going, Math.round(views * 0.12)),
+      carFree: carFreeShare(distanceKm(me, e.coords), e.id, used),
+    };
+  });
 
   const W: Record<string, [number, number, number]> = {
     uga_id: [1, 0, 0],
@@ -317,13 +334,38 @@ export function getOrgAnalytics(orgId: string) {
   return {
     rows,
     totals: {
-      views: rows.reduce((sum, r) => sum + r.views, 0),
+      views: totalViews,
       saves: rows.reduce((sum, r) => sum + r.saves, 0),
       going: rows.reduce((sum, r) => sum + r.going, 0),
     },
     week,
     audience: blendAudience(orgId, evs.length ? [mix[0] / total, mix[1] / total, mix[2] / total] : [0.4, 0.45, 0.15]),
   };
+}
+
+/** Split `total` into integers proportional to `weights` that sum exactly to `total` (largest remainder). */
+export function splitInts(total: number, weights: number[]): number[] {
+  const w = weights.reduce((a, b) => a + b, 0);
+  if (!weights.length || w <= 0) return weights.map(() => 0);
+  const raw = weights.map((x) => (x / w) * total);
+  const out = raw.map(Math.floor);
+  let left = total - out.reduce((a, b) => a + b, 0);
+  const order = raw.map((r, i) => [r - Math.floor(r), i] as const).sort((a, b) => b[0] - a[0]);
+  for (let k = 0; left > 0; k = (k + 1) % order.length, left--) out[order[k][1]]++;
+  return out;
+}
+
+/**
+ * Sample share of "Directions" taps that pick walk, bike or bus, from distance:
+ * under 1.5 km 75–90%, 1.5–5 km 40–70%, over 5 km 10–35%. Seeded per listing,
+ * and nudged so no two listings in one portal show the same number.
+ */
+function carFreeShare(km: number, id: string, used: Set<number>): number {
+  const [lo, hi] = km < 1.5 ? [75, 90] : km <= 5 ? [40, 70] : [10, 35];
+  let pct = lo + (hash(id) % (hi - lo + 1));
+  for (let n = 0; used.has(pct) && n < 60; n++) pct = pct + 1 > hi ? lo : pct + 1;
+  used.add(pct);
+  return pct / 100;
 }
 
 // Who each partner mostly reaches (sample), blended 50/50 with what their listings imply.
@@ -339,7 +381,9 @@ const AUDIENCE_BIAS: Record<string, [number, number, number]> = {
 function blendAudience(orgId: string, derived: [number, number, number]) {
   const b = AUDIENCE_BIAS[orgId] ?? derived;
   const m = derived.map((d, i) => (d + b[i]) / 2);
-  return { students: m[0], locals: m[1], visitors: m[2] };
+  // Whole percents that always total 100.
+  const [students, locals, visitors] = splitInts(100, m);
+  return { students, locals, visitors };
 }
 
 function hash(str: string): number {

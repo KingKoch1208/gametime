@@ -192,7 +192,8 @@ export function Chip({
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ selected: !!active }}
-      hitSlop={{ top: small ? 12 : 8, bottom: small ? 12 : 8, left: 2, right: 2 }}
+      // Visual height ~22–23pt; the slop brings the tap target to at least 44pt.
+      hitSlop={{ top: small ? 12 : 11, bottom: small ? 12 : 11, left: 2, right: 2 }}
       onPress={() => {
         haptic.tap();
         onPress?.();
@@ -223,8 +224,8 @@ export function SectionHeader({ title, kicker, action, onAction }: { title: stri
             {kicker}
           </Txt>
         )}
+        {/* No squiggle here: it's saved for screen titles so it means "you are here". */}
         <Txt v="title">{title}</Txt>
-        <Squiggle color={c.mustard} width={Math.min(140, title.length * 9)} />
       </View>
       {action && (
         <Pressable onPress={onAction} hitSlop={{ top: 15, bottom: 15, left: 8, right: 8 }} accessibilityRole="link" accessibilityLabel={`${action}: ${title}`}>

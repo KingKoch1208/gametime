@@ -48,14 +48,17 @@ Host that one file anywhere (it's what powers the shareable preview link). In th
 1. **Onboarding:** pick *UGA student*, tap a few interests, choose *Walk*, set an age. (You can skip; skipping defaults to Local mode, the safest choice.)
 2. **Now tab → "I'm bored."** Cards are dealt with a shuffle sound. Swipe right to save, left to skip, or tap **Let's go** for Apple Maps directions.
 3. **Map tab:** live pins pulse and busy areas glow. Drag the **time slider** from *Now → Tonight → This weekend* and watch pins come and go. Tap a pin, then swipe the bottom card sideways through nearby spots.
-4. **Pitch Mode:** long-press the **Out in Athens** logo (or turn it on in Profile → Settings). A floating **STUDENT | LOCAL** switch appears at the top of every screen.
-   - Flip to **Local**. Ramsey Center and dining hall items disappear, and Tate trivia gets a "w/ student guest" stamp.
-   - In Events, tap **"Show them (locked)"** to reveal UGA-only items greyed out with a lock and no RSVP or directions.
-   - Tap the ☀/☂ button on the switch to fake **rain**. The Now feed moves indoor picks to the top and says why.
+4. **Pitch Mode:** long-press the **Out in Athens** logo (or turn it on in Profile → Settings). A small **STU · LOC · VIS** pill appears in the header next to your avatar. It never covers content.
+   - Flip to **LOC**. Dining halls and UGA-ID events disappear, and Tate trivia and Ramsey get a BRING A STUDENT stamp ("Bring a student · $12 guest pass").
+   - Flip to **VIS** for the visitor view: parking card, the 48 Hours guide, no weekly classes.
+   - In Events, tap **"Show them (locked)"** to reveal UGA-only items greyed out with a lock and no RSVP or directions. Search says when it held back a UGA-only result.
+   - **Long-press the pill** to fake **rain**. The Now feed moves indoor picks to the top and says why.
 5. **Event detail:** tap **Share** to make a poster-style story card, **Calendar** to add it to the iPhone calendar, or **Make a plan** to invite mock friends and poll a time.
-6. **Explore → a place → Check in.** A passport stamp slams down, and badges fill up in **Profile / Passport**.
-7. **Profile → Partner Portal (demo):** shows what Visit Athens or UGA Rec would see: views, saves, "going" counts, audience mix, **Post an event**, and **Request Featured**.
+6. **Explore → a place → Check in.** A passport stamp slams down, and badges and **The Athens 101** checklist fill up in **Profile / Passport**.
+7. **Profile → Partner Portal (demo):** shows what Visit Athens or UGA Rec would see: views, saves, "going" counts, audience mix, **Post an event**, and **Request Featured**. The numbers agree with each other: the daily bars add up to the Views tile and the listing views, and the audience split totals 100%.
 8. **Profile → Theme → After dark** to switch to the dark theme.
+
+**Demo clock.** The shared web link starts every new viewer on **Friday 6:30pm**, so partners never see odd-hour schedules. Add `?clock=tue`, `?clock=sat` or `?clock=live` to the link to start somewhere else (if the host strips the query, use `#clock=tue`). On the iPhone, pick a preset in Profile → Demo clock. Relative-time events (Open Mic, Telescope Night…) always fall inside their own evening window, so nothing "tonight" ever shows at 3:30pm or 7am.
 
 ---
 
@@ -65,11 +68,11 @@ Host that one file anywhere (it's what powers the shareable preview link). In th
 |---|---|
 | **Onboarding** | 4 skippable steps: Access Mode, interests, how you get around (sets the "near me" radius), and an optional age range |
 | **Access Mode** | `open / uga_id / uga_guest_ok / 18+ / 21+ / ticketed` on every item. Locals don't see `uga_id` by default; the "Show UGA-only stuff" toggle shows them locked. Students get **Dawg perk** badges. Known-too-young age gates hide items for everyone. |
-| **Now** | Live greeting line (day, weather, count open nearby), the **I'm bored** deck, time chips, Happening, Featured (always labeled), Free this week, **Not a bar crowd**, friends going, new this week, curated guides, and a late-night "get home safe" block |
+| **Now** | Greeting line (day, weather, one "open near you" count shared with I'm bored) plus a one-line game-day link, the **I'm bored** deck, time chips, Happening, Featured (partner-paid only, always labeled, hidden if nothing qualifies), **Not a bar crowd** (gets first pick of free evening plans), friends going, guides, and a "get home safe" block with **UGA Ride Smart** for students and a live **Next bus** link |
 | **Events** | Category sections, quick chips, a filter bottom sheet (free, open to me, walkable, car-free, indoor/outdoor, all-ages, sober-friendly, accessible, pet-friendly, price, date range), a list ↔ 14-day calendar strip, and ticket-stub skeleton loaders |
 | **Event detail** | Poster header with date stamp, access stamps, Interested/Going with friend avatars, Calendar / Share / Directions / Make a plan, a mini map, walk/bike/bus times, lineup or opponent, student ticket note, watch parties for away games, review tags, source badge, and "Report outdated info" |
 | **Map** | Custom illustrated pins (brick = events, ivy = places, mustard = food), pulsing live pins, heat glow, friend bubbles, Ghost Mode, filter chips, grid clustering when zoomed out, re-center, a time slider, and a swipeable pin sheet |
-| **Explore** | 9 category tiles, flyer-style place cards (hours, cost, access, good-for, travel badges), car-free picks, 7 magazine-style guides, and the Athens Passport |
+| **Explore** | 9 category tiles, flyer-style place cards (hours, cost, access, good-for, travel badges, **Good NA drinks** tag), car-free picks, 7 magazine-style guides, and the Athens Passport with **The Athens 101** bucket list |
 | **Food** | Open now / cheap / late / deals / coffee / sweet / healthy / dietary, deals by day, farmers market, trucks spotted today, dining halls (Dawg perk), and a discreet food-resources section |
 | **Profile** | Access Mode, age, transport, interests, a "My plans" agenda, saved items, passport rings, friends plus Ghost Mode, followed orgs, submissions (pending), notifications, theme, text size, reduce motion, sounds, Pitch Mode, and the "Prototype — sample data" footer |
 | **Social** | Make a Plan (invite, time poll, shared card), Add something (form → *Pending review*), org pages with follow and a verified badge, review-lite tags |
@@ -116,11 +119,15 @@ out-in-athens/
 
 - **Look:** an Athens telephone-pole gig flyer crossed with a ticket stub. The palette is brick, ivy, cream paper, ink and a little mustard. Type is Fraunces (display), Oswald (labels and stamps) and DM Sans (body). The paper grain is a 160px tile generated for the app. There are no gradients, glass effects or emoji, and the cards have hard edges and offset ink shadows instead of soft rounded app cards.
 - **One custom line-icon set** (`components/Icon.tsx`): about 75 glyphs on a 24px grid with round caps, drawn for this app.
-- **Rubber stamps** carry access status (FREE, OPEN TO ALL, UGA ID, 21+, DAWG PERK, LOCK). They're slightly rotated and spring in when shown, and Reduce Motion turns that off.
+- **One loud thing per card.** A card shows at most one rotated rubber stamp, and only for an access limit: UGA ID, BRING A STUDENT, 21+, 18+, TICKETED (or FEATURED in the labeled slot). Open-to-all is the default, so it gets no stamp. FREE and NEW are plain words in the meta line; DAWG PERK and STUDENT PICK are a small dot + label. Stamps spring in, and Reduce Motion turns that off.
+- **Color means something.** Ticket date stubs are ink by default, brick only when the event is happening now, grey when locked. Section kickers are gone except "Not a bar crowd", and the mustard squiggle sits only under screen titles. Stacked cards have 24pt between them so the punched notches never touch.
 - **Skipping onboarding defaults to Local mode,** so a skipper never sees UGA-only items as available.
 - **Locked items have no calls to action.** UGA-only items shown to locals have no RSVP, directions, check-in or plan buttons, only an explanation.
 - **Known-too-young = hidden.** If the age is unknown, 18+/21+ items show with an age stamp instead.
-- **"Not a bar crowd"** uses a `soberFriendly` flag on events (21+ events default to false) plus late-night food spots.
+- **"Not a bar crowd"** uses a `soberFriendly` flag on events (21+ events default to false) plus late-night food spots. It fills before "Happening", with free plans starting 5pm or later; multi-week classes (`series: true`) and workouts are left out.
+- **Ramsey is guest-OK, not UGA-only.** Non-students can go with a student sponsor on a $12 day guest pass, and single fitness classes are a $10 drop-in (per UGA Rec's posted policy; confirm before a pitch). The app shows Ramsey to locals with BRING A STUDENT and never recommends it to them.
+- **"Good for" tags respect mode.** "Between classes" is hidden for locals and visitors, and "parents visiting" for locals.
+- **Map labels never overlap.** Zoomed in, a pin gets a label only if its box doesn't collide with one already placed (selected, then live, then busiest). The "you" dot is always ivy; when you're not sharing it loses its pulse and gets a dashed ring.
 - **Mock location** is fixed on North Campus so demos look the same wherever the pitch happens. "Near me" radius: walk 1.1 mi, bike 3.1 mi, bus 4.3 mi, car 12 mi.
 - **Travel times** (walk/bike/bus/car) are estimated from straight-line distance with a street-grid factor and an average bus wait. They power the car-free picks and the sustainability badges.
 - **Bottom sheets, the swipe deck and the time slider** are built on React Native `Animated` + `PanResponder`. That avoids adding gesture/reanimated dependencies and keeps everything Expo Go-safe.

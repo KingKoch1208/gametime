@@ -115,7 +115,7 @@ export default function FoodScreen() {
 
         {filtering ? (
           <>
-            <SectionHeader title="Results" kicker={`${results.length} spots`} />
+            <SectionHeader title="Results" />
             <View style={{ paddingHorizontal: 20, gap: 22 }}>
               {results.length ? (
                 results.map((l) => <PlaceCard key={l.item.id} place={l.item} acc={l.acc} km={l.km} now={now} />)
@@ -127,7 +127,7 @@ export default function FoodScreen() {
         ) : (
           <>
             {/* Deals by day */}
-            <SectionHeader title="Deals by day" kicker="Clip ’em" />
+            <SectionHeader title="Deals by day" />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 6 }}>
               {Array.from({ length: 7 }, (_, i) => (now.getDay() + i) % 7).map((d) => {
                 const on = d === dealDay;
@@ -178,7 +178,7 @@ export default function FoodScreen() {
                       <Txt v="labelSm" color={c.brick}>
                         {d.place.name}
                       </Txt>
-                      <Txt v="serif">{d.text.replace(/^\w+day: /, '')}</Txt>
+                      <Txt v="serif">{capitalize(d.text.replace(/^\w+day: /, ''))}</Txt>
                     </View>
                     <View style={{ justifyContent: 'center', paddingRight: 12 }}>
                       <Icon name="tag" color={c.textMuted} size={20} />
@@ -195,7 +195,7 @@ export default function FoodScreen() {
             {/* Farmers market */}
             {market && (
               <>
-                <SectionHeader title="Farmers market" kicker="Saturdays + Wednesdays" />
+                <SectionHeader title="Farmers market" />
                 <Pressable
                   onPress={() => router.push(`/place/${market.id}`)}
                   accessibilityRole="button"
@@ -206,7 +206,7 @@ export default function FoodScreen() {
                     <Icon name="basket" color={palette.mustard} size={36} />
                     <Stamp kind="free" text="SNAP doubled" rotate={6} />
                   </View>
-                  <Txt style={{ fontFamily: fonts.displayBlack, fontSize: 28, color: palette.paper, marginTop: 10 }}>{market.name}</Txt>
+                  <Txt style={{ fontFamily: fonts.displayBlack, fontSize: 28, lineHeight: 34, color: palette.paper, marginTop: 10 }}>{market.name}</Txt>
                   <Txt v="body" color="#DCE3DD" style={{ marginTop: 4 }}>
                     Sat 8am–noon at Bishop Park · Wed 4–7pm downtown
                   </Txt>
@@ -218,7 +218,7 @@ export default function FoodScreen() {
             )}
 
             {/* Trucks */}
-            <SectionHeader title="Food trucks" kicker="Spotted today" />
+            <SectionHeader title="Food trucks" />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 14, paddingTop: 8 }}>
               {trucks.map((l) => (
                 <View key={l.item.id} style={{ width: 240 }}>
@@ -234,7 +234,7 @@ export default function FoodScreen() {
             </ScrollView>
 
             {/* Dining halls */}
-            <SectionHeader title="Dining halls" kicker="UGA meal plan" />
+            <SectionHeader title="Dining halls" />
             {halls.length ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 14, paddingTop: 8 }}>
                 {halls.map((l) => (
@@ -258,7 +258,7 @@ export default function FoodScreen() {
             )}
 
             {/* Restaurants & cafes */}
-            <SectionHeader title="Restaurants & cafes" kicker="Closest first" />
+            <SectionHeader title="Restaurants & cafes" />
             <View style={{ paddingHorizontal: 20, gap: 22, paddingTop: 6 }}>
               {restaurants.map((l) => (
                 <PlaceCard key={l.item.id} place={l.item} acc={l.acc} km={l.km} now={now} />
@@ -297,4 +297,8 @@ export default function FoodScreen() {
       </ScrollView>
     </Paper>
   );
+}
+
+function capitalize(t: string): string {
+  return t.charAt(0).toUpperCase() + t.slice(1);
 }

@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ReviewTag } from '@/data/types';
 import { haptic, sound } from '@/lib/feedback';
 import { refresh } from '@/services/dataService';
-import { onToast } from '@/lib/toast';
+import { onToast, toast } from '@/lib/toast';
 import { useApp } from '@/state/AppState';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, palette } from '@/theme/tokens';
@@ -129,63 +129,70 @@ export function FreshStamp({ stampKey }: { stampKey: number }) {
   );
 }
 
-// ——— Pitch Mode floating switch (Student ↔ Local) ———
+// ——— Pitch Mode switch (Student · Local · Visitor) ———
+// A small pill docked in the tab header next to the avatar, shown only in Pitch
+// Mode, so it never covers content. Long-press it to fake rain for the demo.
 
-export function PitchSwitch() {
+const PITCH_MODES = [
+  { m: 'student', label: 'STU', name: 'student' },
+  { m: 'local', label: 'LOC', name: 'local' },
+  { m: 'visitor', label: 'VIS', name: 'visitor' },
+] as const;
+
+export function PitchPill() {
   const { prefs, profile, setProfile, setPrefs } = useApp();
   if (!prefs.pitchMode) return null;
-  // A slim tab on the left edge, mid-screen: never on top of a screen title.
+  const rain = prefs.demoWeather === 'rain';
+  const toggleRain = () => {
+    haptic.tap();
+    setPrefs({ demoWeather: rain ? 'auto' : 'rain' });
+    toast(rain ? 'Demo weather: back to the forecast.' : 'Demo weather: rain. Indoor picks move to the top.');
+  };
   return (
-    <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, top: '44%', zIndex: 100 }}>
-      <View
-        style={{
-          backgroundColor: palette.ink,
-          borderTopRightRadius: 6,
-          borderBottomRightRadius: 6,
-          paddingVertical: 4,
-          paddingRight: 3,
-          paddingLeft: 2,
-          borderWidth: 1.5,
-          borderLeftWidth: 0,
-          borderColor: palette.mustard,
-          gap: 3,
-          alignItems: 'center',
-        }}
-      >
-        {(['student', 'local'] as const).map((m) => {
-          const on = profile.mode === m;
-          return (
-            <Pressable
-              key={m}
-              accessibilityRole="button"
-              accessibilityLabel={`Pitch mode: switch to ${m} view`}
-              accessibilityState={{ selected: on }}
-              hitSlop={{ right: 8 }}
-              onPress={() => {
-                haptic.stamp();
-                setProfile({ mode: m });
-              }}
-              style={{ width: 36, paddingVertical: 7, alignItems: 'center', backgroundColor: on ? palette.mustard : 'transparent', borderRadius: 3 }}
-            >
-              <Txt style={{ fontFamily: fonts.label, fontSize: 10, letterSpacing: 0.8, color: on ? palette.ink : palette.paper }} maxFontSizeMultiplier={1}>
-                {m === 'student' ? 'STU' : 'LOC'}
-              </Txt>
-            </Pressable>
-          );
-        })}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Pitch mode: toggle demo weather"
-          hitSlop={{ right: 8 }}
-          onPress={() => {
-            haptic.tap();
-            setPrefs({ demoWeather: prefs.demoWeather === 'rain' ? 'auto' : 'rain' });
-          }}
-          style={{ width: 36, paddingVertical: 6, alignItems: 'center', borderTopWidth: 1, borderColor: '#5B5447' }}
-        >
-          <Icon name={prefs.demoWeather === 'rain' ? 'rain' : 'sun'} color={palette.mustard} size={16} />
-        </Pressable>
-      </View>
+    <View
+      accessibilityRole="radiogroup"
+      accessibilityLabel="Pitch Mode view. Long-press to toggle demo rain."
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: palette.ink,
+        borderRadius: 4,
+        borderWidth: 1.5,
+        borderColor: palette.mustard,
+        padding: 2,
+        gap: 2,
+      }}
+    >
+      {PITCH_MODES.map(({ m, label, name }) => {
+        const on = profile.mode === m;
+        return (
+          <Pressable
+            key={m}
+            accessibilityRole="radio"
+            accessibilityLabel={`Pitch mode: ${name} view`}
+            accessibilityState={{ selected: on }}
+            accessibilityActions={[{ name: 'longpress', label: 'Toggle demo rain' }]}
+            onAccessibilityAction={toggleRain}
+            hitSlop={{ top: 10, bottom: 10 }}
+            delayLongPress={500}
+            onLongPress={toggleRain}
+            onPress={() => {
+              haptic.stamp();
+              setProfile({ mode: m });
+            }}
+            style={{ minWidth: 32, height: 26, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? palette.mustard : 'transparent', borderRadius: 2 }}
+          >
+            <Txt style={{ fontFamily: fonts.label, fontSize: 10.5, letterSpacing: 0.8, color: on ? palette.ink : palette.paper }} maxFontSizeMultiplier={1}>
+              {label}
+            </Txt>
+          </Pressable>
+        );
+      })}
+      {rain && (
+        <View style={{ paddingHorizontal: 3 }} accessible accessibilityLabel="Demo rain on">
+          <Icon name="rain" color={palette.mustard} size={14} />
+        </View>
+      )}
     </View>
   );
 }

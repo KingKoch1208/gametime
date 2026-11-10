@@ -2,11 +2,12 @@
 // friends show up as bubbles, and a time slider makes pins appear/disappear.
 import { router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Dimensions, FlatList, PanResponder, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Animated, Dimensions, FlatList, PanResponder, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import MapView, { Circle, Marker, type Region } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ProfileButton } from '@/components/Header';
+import { PitchPill } from '@/components/misc';
 import { CATEGORY_ICON, Icon, type IconName } from '@/components/Icon';
 import { ClusterPin, FriendBubble, MeDot, Pin, type PinColor } from '@/components/MapPins';
 import { BottomSheet } from '@/components/BottomSheet';
@@ -191,6 +192,31 @@ export default function MapScreen() {
     });
   }, [pins, region.latitudeDelta, selected]);
 
+  // Zoomed in, a pin gets a text label only if the label's box doesn't overlap one
+  // already placed. Placed in order of weight (selected, then live, then busiest);
+  // skipped pins still show their name in the bottom sheet when tapped.
+  const { width: screenW, height: screenH } = useWindowDimensions();
+  const labeled = useMemo(() => {
+    const out = new Set<string>();
+    if (!zoomedIn) return out;
+    const placed: [number, number, number, number][] = [];
+    const order = [...pins].sort(
+      (a, b) => Number(b.id === selected) - Number(a.id === selected) || Number(b.live) - Number(a.live) || b.weight - a.weight,
+    );
+    for (const p of order) {
+      const x = ((p.coords.longitude - region.longitude) / region.longitudeDelta) * screenW + screenW / 2;
+      const y = ((region.latitude - p.coords.latitude) / region.latitudeDelta) * screenH + screenH / 2;
+      const text = Math.min(p.title.length, 18);
+      const w = Math.min(124, text * 6.4 + 10);
+      // The label sits under the pin (see Pin in MapPins.tsx); pad 4pt so they never touch.
+      const box: [number, number, number, number] = [x - w / 2 - 4, y + 36, x + w / 2 + 4, y + 58];
+      if (placed.some((q) => box[0] < q[2] && box[2] > q[0] && box[1] < q[3] && box[3] > q[1])) continue;
+      placed.push(box);
+      out.add(p.id);
+    }
+    return out;
+  }, [pins, zoomedIn, region, selected, screenW, screenH]);
+
   // Bottom sheet: selected pin + nearby pins to swipe through.
   const sheetPins = useMemo(() => {
     const sel = pins.find((p) => p.id === selected);
@@ -261,7 +287,7 @@ export default function MapScreen() {
                 live={cl.pin.live}
                 selected={cl.pin.id === selected}
                 locked={cl.pin.locked}
-                label={zoomedIn ? cl.pin.title : undefined}
+                label={labeled.has(cl.pin.id) ? cl.pin.title : undefined}
               />
             </Marker>
           ),
@@ -312,6 +338,7 @@ export default function MapScreen() {
               {pins.filter((p) => p.live).length} live · {pins.length} on the map
             </Txt>
           </View>
+          <PitchPill />
           <ProfileButton />
         </View>
         <View>

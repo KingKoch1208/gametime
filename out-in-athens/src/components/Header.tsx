@@ -11,8 +11,9 @@ import { useApp } from '@/state/AppState';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts } from '@/theme/tokens';
 import { Avatar } from './Avatars';
+import { PitchPill } from './misc';
 import { Icon } from './Icon';
-import { Txt } from './ui';
+import { Squiggle, Txt } from './ui';
 
 type PrefsApi = Pick<ReturnType<typeof useApp>, 'prefs' | 'setPrefs'>;
 
@@ -20,7 +21,7 @@ type PrefsApi = Pick<ReturnType<typeof useApp>, 'prefs' | 'setPrefs'>;
 export function togglePitchMode(prefs: PrefsApi['prefs'], setPrefs: PrefsApi['setPrefs']) {
   const on = !prefs.pitchMode;
   setPrefs({ pitchMode: on, pitchHintSeen: true, ...(on && !prefs.demoTime ? { demoTime: demoPreset('fri') } : {}) });
-  toast(on ? 'Pitch Mode on: demo clock set to Friday 6:30pm. Long-press the logo again to turn it off.' : 'Pitch Mode off.');
+  toast(on ? 'Pitch Mode on: STU · LOC · VIS switch is in the header (long-press it for rain). Long-press the logo to turn it off.' : 'Pitch Mode off.');
 }
 
 export function Wordmark({ size = 15 }: { size?: number }) {
@@ -79,20 +80,25 @@ export function ProfileButton() {
 }
 
 export function TabHeader({ title, subtitle, right }: { title?: string; subtitle?: ReactNode; right?: ReactNode }) {
+  const { c } = useTheme();
   const insets = useSafeAreaInsets();
   return (
     <View style={{ paddingTop: insets.top + 6, paddingHorizontal: 20 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Wordmark />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <PitchPill />
           {right}
           <ProfileButton />
         </View>
       </View>
       {title && (
-        <Txt v="display" style={{ marginTop: 14 }} accessibilityRole="header">
-          {title}
-        </Txt>
+        <>
+          <Txt v="display" style={{ marginTop: 14 }} accessibilityRole="header">
+            {title}
+          </Txt>
+          <Squiggle color={c.mustard} width={Math.min(160, title.length * 14)} />
+        </>
       )}
       {subtitle}
     </View>

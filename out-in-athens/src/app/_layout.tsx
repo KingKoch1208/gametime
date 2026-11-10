@@ -14,7 +14,7 @@ import { useEffect } from 'react';
 import { LogBox, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { PitchSwitch, ToastHost } from '@/components/misc';
+import { ToastHost } from '@/components/misc';
 import { setSoundsEnabled } from '@/lib/feedback';
 import { setDemoTime } from '@/services/dataService';
 import { AppStateProvider, useApp } from '@/state/AppState';
@@ -84,7 +84,6 @@ function Root({ fontsLoaded }: { fontsLoaded: boolean }) {
           <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />
         </Stack.Protected>
       </Stack>
-      <PitchSwitch />
       <ToastHost />
     </View>
   );

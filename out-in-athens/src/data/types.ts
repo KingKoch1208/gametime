@@ -71,6 +71,8 @@ export type AthensEvent = {
   accessibleVenue: boolean;
   petFriendly: boolean;
   dawgPerk?: string; // e.g. "Free with UGA ID"
+  /** For uga_guest_ok: what a non-student needs, e.g. "Bring a student · $12 guest pass". */
+  guestNote?: string;
   description: string;
   orgId?: string;
   source: Source;
@@ -95,8 +97,8 @@ export type AthensEvent = {
   audience?: 'students' | 'everyone';
   /** Weekly class / shift: hidden for visitors. */
   recurring?: boolean;
-  /** Allowed to start between 1am and 7am when its time is relative to the clock. */
-  lateNight?: boolean;
+  /** Multi-week class you sign up for once (not a one-night plan). */
+  series?: boolean;
 };
 
 export type DayHours = [number, number] | null; // [open, close] in hours from midnight; close may be > 24
@@ -118,8 +120,12 @@ export type Place = {
   costNote?: string;
   access: Access;
   dawgPerk?: string;
+  /** For uga_guest_ok: what a non-student needs, e.g. "Bring a student · $12 guest pass". */
+  guestNote?: string;
   indoor: boolean;
   goodFor: string[];
+  /** Real mocktails or NA beer on the menu, so a sober person can still go. */
+  naDrinks?: boolean;
   description: string;
   neighborhood: string;
   accent: Accent;

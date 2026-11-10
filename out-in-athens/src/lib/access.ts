@@ -130,3 +130,15 @@ export const MODE_LABEL: Record<AccessMode, string> = {
   local: 'Athens local',
   visitor: 'Just visiting',
 };
+
+// "Good for" tags that only make sense to students. Locals don't have classes or
+// visiting parents; visitors might be the parents, so they keep that one.
+const STUDENT_GOOD_FOR: Record<AccessMode, string[]> = {
+  student: [],
+  local: ['between classes', 'parents visiting'],
+  visitor: ['between classes'],
+};
+
+export function goodForTags(tags: string[], mode: AccessMode): string[] {
+  return tags.filter((t) => !STUDENT_GOOD_FOR[mode].includes(t));
+}

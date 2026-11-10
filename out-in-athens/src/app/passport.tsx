@@ -8,8 +8,10 @@ import { Icon } from '@/components/Icon';
 import { placeIcon } from '@/components/PlaceCard';
 import { ProgressRing } from '@/components/ProgressRing';
 import { Paper, Txt } from '@/components/ui';
+import { ATHENS_101, BUCKET_GROUPS } from '@/data/athens101';
+import { haptic } from '@/lib/feedback';
 import { BADGES, badgeProgress } from '@/lib/passport';
-import { getPlaces } from '@/services/dataService';
+import { getPlace, getPlaces } from '@/services/dataService';
 import { useApp } from '@/state/AppState';
 import { useTheme } from '@/theme/ThemeProvider';
 import { accentFill, fonts, palette } from '@/theme/tokens';
@@ -17,12 +19,14 @@ import { accentFill, fonts, palette } from '@/theme/tokens';
 export default function PassportScreen() {
   const { c } = useTheme();
   const insets = useSafeAreaInsets();
-  const { viewer, checkins } = useApp();
+  const { viewer, checkins, done101 = [], toggle101 } = useApp();
   // Every place you could visit is a slot in the book.
   const slots = getPlaces({ viewer, openToMe: true })
     .map((l) => l.item)
     .filter((p) => p.foodKind !== 'truck');
   const count = Object.keys(checkins).length;
+  const isDone = (id: string, placeId?: string) => (placeId ? !!checkins[placeId] : done101.includes(id));
+  const done101Count = ATHENS_101.filter((b) => isDone(b.id, b.placeId)).length;
 
   return (
     <Paper>
@@ -42,6 +46,68 @@ export default function PassportScreen() {
           <Txt v="bodySm" color="#DCE3DD" center>
             {count} of {slots.length} stamps · check in anywhere to collect
           </Txt>
+        </View>
+
+        {/* The Athens 101 */}
+        <View style={{ marginHorizontal: 20, marginBottom: 24, borderWidth: 1.5, borderColor: c.lineStrong, backgroundColor: c.surface, padding: 16 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <ProgressRing value={done101Count / ATHENS_101.length} size={52} color={c.ivyFill} icon="list" label="Athens 101" />
+            <View style={{ flex: 1 }}>
+              <Txt v="title" accessibilityRole="header">
+                The Athens 101
+              </Txt>
+              <Txt v="caption" muted>
+                {done101Count} of {ATHENS_101.length} done · grouped like UGA Housing’s “101 Things to Do in Athens” (sample picks)
+              </Txt>
+            </View>
+          </View>
+          {BUCKET_GROUPS.map((g) => (
+            <View key={g} style={{ marginTop: 14 }}>
+              <Txt v="labelSm" muted style={{ marginBottom: 4 }}>
+                {g}
+              </Txt>
+              {ATHENS_101.filter((b) => b.group === g).map((b) => {
+                const done = isDone(b.id, b.placeId);
+                const place = b.placeId ? getPlace(b.placeId) : undefined;
+                return (
+                  <Pressable
+                    key={b.id}
+                    accessibilityRole={place ? 'link' : 'checkbox'}
+                    accessibilityState={place ? undefined : { checked: done }}
+                    accessibilityLabel={`${b.text}${done ? ', done' : ''}${place && !done ? '. Check in to tick it off' : ''}`}
+                    onPress={() => {
+                      haptic.tap();
+                      if (place) router.push(`/place/${place.id}`);
+                      else toggle101(b.id);
+                    }}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44, borderBottomWidth: 1, borderColor: c.line }}
+                  >
+                    <View
+                      style={{
+                        width: 20,
+                        height: 20,
+                        borderWidth: 1.5,
+                        borderColor: done ? c.ivy : c.lineStrong,
+                        backgroundColor: done ? c.ivyFill : 'transparent',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {done && <Icon name="check" color={palette.paper} size={14} strokeWidth={2.6} />}
+                    </View>
+                    <Txt v="bodySm" style={{ flex: 1, textDecorationLine: done ? 'line-through' : 'none' }} muted={done}>
+                      {b.text}
+                    </Txt>
+                    {place && !done && (
+                      <Txt v="labelSm" color={c.brick}>
+                        Check in →
+                      </Txt>
+                    )}
+                  </Pressable>
+                );
+              })}
+            </View>
+          ))}
         </View>
 
         {/* Badges */}

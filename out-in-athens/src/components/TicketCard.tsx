@@ -5,16 +5,16 @@ import { memo, useEffect, useState } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
 
 import type { AthensEvent } from '@/data/types';
-import type { AccessResult } from '@/lib/access';
+import { type AccessResult, STAMP_TEXT } from '@/lib/access';
 import { haptic } from '@/lib/feedback';
 import { fmtDistance } from '@/lib/geo';
 import { DAY_SHORT, fmtTime, MONTH_SHORT, whenLabel } from '@/lib/time';
 import { useApp } from '@/state/AppState';
 import { useTheme } from '@/theme/ThemeProvider';
-import { accentFill, fonts, onAccent } from '@/theme/tokens';
+import { fonts, palette } from '@/theme/tokens';
 import { FriendStack } from './Avatars';
 import { CATEGORY_ICON, Icon } from './Icon';
-import { Stamp } from './Stamp';
+import { cardStamp, DotLabel, Stamp } from './Stamp';
 import { Txt } from './ui';
 import { now as clockNow } from '@/services/dataService';
 
@@ -38,14 +38,22 @@ function TicketCardImpl({ event: e, acc, km, live, width, now = clockNow(), show
   const isStudent = profile.mode === 'student';
   const saved = savedEvents.includes(e.id);
   const locked = !acc.canAttend;
-  const fill = locked ? c.locked : accentFill(c, e.accent);
-  const onFill = locked ? c.bg : onAccent(e.accent);
+  // The stub's color means something: brick = happening now, grey = locked, ink otherwise.
+  const fill = locked ? c.locked : live ? c.brickFill : c.inkFill;
+  const onFill = locked ? c.bg : palette.paper;
+  const textColor = locked ? c.locked : undefined;
+  const stamp = cardStamp(acc, featuredSlot);
+  const studentPick = isStudent && e.source.kind === 'student' && e.source.verified;
+  const price = e.price === 0 ? (e.priceNote ?? 'Free') : (e.priceNote ?? `$${e.price}`);
+  const meta = [whenLabel(e.start, e.end, now), price, e.isNew ? 'New' : null].filter(Boolean).join(' · ');
 
   const a11y = [
     e.title,
     whenLabel(e.start, e.end, now),
     e.venue,
-    e.price === 0 ? 'Free' : `$${e.price}`,
+    price,
+    e.isNew ? 'New' : undefined,
+    stamp && !locked ? STAMP_TEXT[stamp] : undefined,
     locked ? `Locked: ${acc.lockReason}` : undefined,
     acc.perk ? 'Dawg perk' : undefined,
   ]
@@ -64,7 +72,7 @@ function TicketCardImpl({ event: e, acc, km, live, width, now = clockNow(), show
         style={[
           styles.card,
           width != null && { flex: 1, minHeight: 176 },
-          { backgroundColor: c.surface, borderColor: c.lineStrong, opacity: locked ? 0.55 : 1 },
+          { backgroundColor: c.surface, borderColor: locked ? c.locked : c.lineStrong },
         ]}
       >
         {/* Date block */}
@@ -107,12 +115,18 @@ function TicketCardImpl({ event: e, acc, km, live, width, now = clockNow(), show
                   {km != null ? ` · ${fmtDistance(km)}` : ''}
                 </Txt>
               </View>
-              <Txt v="serif" numberOfLines={2}>
+              <Txt v="serif" numberOfLines={2} color={textColor}>
                 {e.title}
               </Txt>
-              <Txt v="bodySm" muted numberOfLines={1} style={{ marginTop: 2 }}>
-                {whenLabel(e.start, e.end, now)} · {e.price === 0 ? (e.priceNote ?? 'Free') : `$${e.price}`}
+              <Txt v="bodySm" muted={!locked} color={textColor} numberOfLines={1} style={{ marginTop: 2 }}>
+                {meta}
               </Txt>
+              {(acc.perk || studentPick) && (
+                <View style={{ flexDirection: 'row', gap: 12, marginTop: 6 }}>
+                  {acc.perk && <DotLabel label="Dawg perk" />}
+                  {studentPick && <DotLabel label="Student pick" color={c.ivy} />}
+                </View>
+              )}
             </View>
             {!locked && (
               <Pressable
@@ -130,13 +144,11 @@ function TicketCardImpl({ event: e, acc, km, live, width, now = clockNow(), show
             )}
           </View>
 
-          <View style={styles.stamps}>
-            <Stamp kind={acc.stamp} text={acc.stamp === 'lock' ? acc.lockReason : undefined} />
-            {acc.perk && <Stamp kind="perk" />}
-            {featuredSlot && <Stamp kind="featured" />}
-            {e.isNew && !featuredSlot && <Stamp kind="new" />}
-            {isStudent && e.source.kind === 'student' && e.source.verified && <Stamp kind="verified" text="Student pick" />}
-          </View>
+          {stamp && (
+            <View style={styles.stamps}>
+              <Stamp kind={stamp} text={stamp === 'lock' ? acc.lockReason : undefined} />
+            </View>
+          )}
 
           {showFriends && e.friendsGoing.length > 0 && !locked && (
             <View style={{ marginTop: 8 }}>

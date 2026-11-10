@@ -204,11 +204,11 @@ export function MeDot({ hidden }: { hidden?: boolean }) {
   const { reduceMotion } = useTheme();
   const pulse = useState(() => new Animated.Value(0))[0];
   useEffect(() => {
-    if (reduceMotion) return;
+    if (reduceMotion || hidden) return;
     const loop = Animated.loop(Animated.timing(pulse, { toValue: 1, duration: 1800, useNativeDriver: true }));
     loop.start();
     return () => loop.stop();
-  }, [pulse, reduceMotion]);
+  }, [pulse, reduceMotion, hidden]);
   return (
     <View style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
       <Animated.View
@@ -222,7 +222,9 @@ export function MeDot({ hidden }: { hidden?: boolean }) {
           transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] }) }],
         }}
       />
-      <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: hidden ? '#8C8476' : palette.ivy, borderWidth: 3, borderColor: palette.paper }} />
+      {/* Always the ivy "you" dot the legend promises. Not shared = no pulse and a dashed ring. */}
+      {hidden && <View style={{ position: 'absolute', width: 28, height: 28, borderRadius: 14, borderWidth: 1.5, borderStyle: 'dashed', borderColor: palette.ivy }} />}
+      <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: palette.ivy, borderWidth: 3, borderColor: palette.paper }} />
     </View>
   );
 }

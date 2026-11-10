@@ -54,7 +54,9 @@ type Seed = Omit<
 };
 
 type When =
-  | { rel: number; mins: number } // starts `rel` minutes from now
+  // Starts `rel` minutes from now, but only inside its daily window [startHour, endHour).
+  // Outside the window it moves to the window's next start (today's, or tomorrow's).
+  | { rel: number; mins: number; window: [number, number] }
   | { day: number; h: number; m?: number; hrs: number } // day offset from today
   | { sat: number; h: number; m?: number; hrs: number }; // nth upcoming Saturday (0 = this one)
 
@@ -69,6 +71,8 @@ const SRC = {
   local: { kind: 'student', name: 'Local submitted', verified: true },
   team: { kind: 'team', name: 'Out in Athens team', verified: true },
   scraper: { kind: 'scraper', name: 'Venue calendar (auto)', verified: false },
+  gmoa: { kind: 'partner', name: 'Georgia Museum of Art', verified: true },
+  garden: { kind: 'partner', name: 'State Botanical Garden', verified: true },
 } as const;
 
 const SEEDS: Seed[] = [
@@ -78,7 +82,7 @@ const SEEDS: Seed[] = [
     title: 'Songwriter Open Mic',
     category: 'concerts',
     interests: ['music'],
-    when: { rel: -60, mins: 210 },
+    when: { rel: -60, mins: 210, window: [19, 22] },
     v: 'hendershots',
     price: 0,
     access: 'open',
@@ -94,7 +98,7 @@ const SEEDS: Seed[] = [
     title: 'Climbing Wall Open Hours',
     category: 'campus',
     interests: ['fitness'],
-    when: { rel: -30, mins: 180 },
+    when: { rel: -30, mins: 180, window: [10, 22] },
     v: 'ramsey',
     price: 0,
     access: 'uga_id',
@@ -110,13 +114,13 @@ const SEEDS: Seed[] = [
     title: 'Museum After Hours: Sketch Night',
     category: 'arts',
     interests: ['arts'],
-    when: { rel: -20, mins: 140 },
+    when: { rel: -20, mins: 140, window: [18, 20] },
     v: 'gmoa',
     price: 0,
     access: 'open',
     description: 'Pencils and paper provided. Draw from the collection with a docent wandering around to talk shop.',
-    source: SRC.visit,
-    orgId: 'visit-athens',
+    source: SRC.gmoa,
+    orgId: 'gmoa',
     accent: 'brick',
     friendsGoing: ['f1', 'f3'],
     reviewTags: ['chill', 'date spot'],
@@ -126,7 +130,7 @@ const SEEDS: Seed[] = [
     title: 'Open Board Game Night',
     category: 'community',
     interests: ['nerdy'],
-    when: { rel: 45, mins: 180 },
+    when: { rel: 45, mins: 180, window: [18, 22] },
     v: 'tyches',
     price: 0,
     access: 'open',
@@ -142,7 +146,7 @@ const SEEDS: Seed[] = [
     title: 'Pickup Soccer Under the Lights',
     category: 'outdoors',
     interests: ['sports', 'fitness'],
-    when: { rel: 30, mins: 120 },
+    when: { rel: 30, mins: 120, window: [18, 21] },
     v: 'bishop',
     price: 0,
     access: 'open',
@@ -154,10 +158,10 @@ const SEEDS: Seed[] = [
   },
   {
     id: 'tate-trivia',
-    title: 'Late-Night Trivia at Tate',
+    title: 'Trivia Night at Tate',
     category: 'campus',
     interests: ['nerdy'],
-    when: { rel: 90, mins: 120 },
+    when: { rel: 90, mins: 120, window: [20, 23] },
     v: 'tate',
     price: 0,
     access: 'uga_guest_ok',
@@ -173,7 +177,7 @@ const SEEDS: Seed[] = [
     title: 'Telescope Night on Herty Field',
     category: 'outdoors',
     interests: ['nerdy', 'outdoors', 'family'],
-    when: { rel: 150, mins: 120 },
+    when: { rel: 150, mins: 120, window: [20, 23] },
     v: 'herty',
     price: 0,
     access: 'open',
@@ -219,7 +223,6 @@ const SEEDS: Seed[] = [
   },
   {
     id: 'symphony-fall',
-    featured: true,
     title: 'Athens Symphony: Fall Concert',
     category: 'concerts',
     interests: ['music', 'family'],
@@ -229,8 +232,7 @@ const SEEDS: Seed[] = [
     priceNote: 'Free, but grab a ticket',
     access: 'ticketed',
     description: 'Community orchestra playing Dvořák and film scores. Free tickets released Monday.',
-    source: SRC.visit,
-    orgId: 'visit-athens',
+    source: SRC.scraper,
     accent: 'ivy',
     friendsGoing: ['f5'],
     lineup: ['Dvořák: Symphony No. 8', 'Selections from film scores'],
@@ -526,7 +528,7 @@ const SEEDS: Seed[] = [
   {
     id: 'club-fair',
     audience: 'students',
-    title: 'Spring Club Preview Fair',
+    title: 'Club Preview Fair',
     category: 'campus',
     interests: ['nerdy', 'volunteer'],
     when: { day: 1, h: 11, hrs: 4 },
@@ -550,6 +552,22 @@ const SEEDS: Seed[] = [
     access: 'uga_id',
     dawgPerk: 'Free with UGA ID',
     description: 'UGA Rec staff teach falling, footwork and route reading.',
+    source: SRC.rec,
+    orgId: 'uga-rec',
+    accent: 'ivy',
+  },
+  {
+    id: 'ramsey-cycle',
+    title: 'Drop-in Indoor Cycling',
+    category: 'campus',
+    interests: ['fitness'],
+    when: { day: 1, h: 17, m: 30, hrs: 1 },
+    v: 'ramsey',
+    price: 10,
+    priceNote: '$10 drop-in',
+    access: 'uga_guest_ok',
+    guestNote: 'Bring a student · $10 drop-in class',
+    description: '45-minute ride with a playlist that peaks right when you want it to. Bikes set up for you; bring water.',
     source: SRC.rec,
     orgId: 'uga-rec',
     accent: 'ivy',
@@ -654,6 +672,7 @@ const SEEDS: Seed[] = [
   {
     id: 'pottery-basics',
     recurring: true,
+    series: true,
     title: 'Pottery Basics (4-week class)',
     category: 'community',
     interests: ['arts'],
@@ -708,6 +727,7 @@ const SEEDS: Seed[] = [
     description: 'Galleries and shops stay open late with artists on site. Map at any participating door.',
     source: SRC.visit,
     orgId: 'visit-athens',
+    featured: true,
     accent: 'brick',
     indoor: false,
     petFriendly: true,
@@ -755,8 +775,8 @@ const SEEDS: Seed[] = [
     price: 0,
     access: 'open',
     description: 'Binoculars available to borrow. Beginners very welcome.',
-    source: SRC.visit,
-    orgId: 'visit-athens',
+    source: SRC.garden,
+    orgId: 'botanical-garden',
     accent: 'ivy',
     indoor: false,
   },
@@ -879,14 +899,21 @@ function startOfDay(d: Date): Date {
   return x;
 }
 
-function resolveWhen(w: When, now: Date, lateNight = false): { start: Date; end: Date } {
+function resolveWhen(w: When, now: Date): { start: Date; end: Date } {
   if ('rel' in w) {
-    const start = new Date(now.getTime() + w.rel * 60_000);
+    let start = new Date(now.getTime() + w.rel * 60_000);
     start.setSeconds(0, 0);
     // Round to the nearest quarter hour so times look real.
     start.setMinutes(Math.round(start.getMinutes() / 15) * 15);
-    // Nothing daytime-ish "happens" at 3am: clamp 1am–7am starts to 7am unless flagged late-night.
-    if (!lateNight && start.getHours() >= 1 && start.getHours() < 7) start.setHours(7, 0, 0, 0);
+    // Keep it inside its window, so Telescope Night never lands at 3:30pm or 7am.
+    const [from, to] = w.window;
+    const hr = start.getHours() + start.getMinutes() / 60;
+    if (hr < from || hr >= to) {
+      const next = startOfDay(start);
+      next.setHours(from, 0, 0, 0);
+      if (hr >= to) next.setDate(next.getDate() + 1);
+      start = next;
+    }
     return { start, end: new Date(start.getTime() + w.mins * 60_000) };
   }
   const base = startOfDay(now);
@@ -914,7 +941,7 @@ export function buildEvents(now: Date): AthensEvent[] {
   return SEEDS.map((s) => {
     const { when, v, ...rest } = s;
     const venue = V[v];
-    const { start, end } = resolveWhen(when, now, s.lateNight);
+    const { start, end } = resolveWhen(when, now);
     const interested = s.interested ?? seeded(s.id, 12, 340);
     return {
       ...rest,

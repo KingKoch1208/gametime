@@ -31,10 +31,20 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "output": "single",
+      "bundler": "metro",
+      "name": "Out in Athens",
+      "themeColor": "#A63A2B",
+      "backgroundColor": "#F3ECDD"
     },
     "plugins": [
-      "expo-router",
+      [
+        "expo-router",
+        {
+          "asyncRoutes": false
+        }
+      ],
       "expo-font",
       [
         "expo-splash-screen",
@@ -42,22 +52,31 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 200,
           "backgroundColor": "#F3ECDD",
-          "dark": { "backgroundColor": "#1C1A17", "image": "./assets/splash-icon.png" }
+          "dark": {
+            "backgroundColor": "#1C1A17",
+            "image": "./assets/splash-icon.png"
+          }
         }
       ],
       "expo-sharing",
       "expo-audio",
       [
         "expo-calendar",
-        { "calendarPermission": "Add events you're going to to your calendar." }
+        {
+          "calendarPermission": "Add events you're going to to your calendar."
+        }
       ],
       [
         "expo-location",
-        { "locationWhenInUsePermission": "Out in Athens uses your location to show what's open near you." }
+        {
+          "locationWhenInUsePermission": "Out in Athens uses your location to show what's open near you."
+        }
       ],
       [
         "expo-image-picker",
-        { "photosPermission": "Attach a photo when you submit something to the guide." }
+        {
+          "photosPermission": "Attach a photo when you submit something to the guide."
+        }
       ]
     ],
     "experiments": {

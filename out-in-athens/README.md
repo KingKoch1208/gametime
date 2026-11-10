@@ -31,6 +31,16 @@ npm run lint        # ESLint (expo config)
 
 To start over in the app, go to **Profile → Reset demo & restart onboarding**.
 
+### No computer? Share the web preview
+
+The app also builds as a single web page that runs in any phone browser (no Expo Go needed):
+
+```bash
+npm run build:web-preview     # → web-preview/out-in-athens.html (one self-contained file)
+```
+
+Host that one file anywhere (it's what powers the shareable preview link). In the web version, the map is an illustrated stand-in, because real map tiles and Apple Maps can't load in a hosted page. Haptics, the iPhone calendar sheet and story-card sharing only work in the native app. The web-only swaps live in `web/` and `metro.config.js`; the iPhone app doesn't use them.
+
 ---
 
 ## A 3-minute pitch demo

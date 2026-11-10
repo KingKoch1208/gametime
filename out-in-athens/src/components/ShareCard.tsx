@@ -96,6 +96,10 @@ export async function shareEventCard(ref: RefObject<ViewRef | null>, e: AthensEv
     }
     throw new Error('sharing unavailable');
   } catch {
-    await Share.share({ message: `${e.title} — ${DAY_LONG[e.start.getDay()]} ${fmtTime(e.start)} at ${e.venue}. Found on Out in Athens.` });
+    try {
+      await Share.share({ message: `${e.title} — ${DAY_LONG[e.start.getDay()]} ${fmtTime(e.start)} at ${e.venue}. Found on Out in Athens.` });
+    } catch {
+      // Sharing isn't available here (e.g. the web preview).
+    }
   }
 }

@@ -1,8 +1,8 @@
 import * as Calendar from 'expo-calendar/legacy';
-import { Alert } from 'react-native';
 
 import type { AthensEvent } from '@/data/types';
 import { haptic } from './feedback';
+import { toast } from '@/lib/toast';
 
 /** Opens the iOS "New Event" sheet pre-filled. Works in Expo Go. */
 export async function addToCalendar(e: AthensEvent) {
@@ -16,6 +16,6 @@ export async function addToCalendar(e: AthensEvent) {
     });
     if (res.action === 'saved') haptic.success();
   } catch {
-    Alert.alert('Couldn’t open Calendar', 'Calendar access may be turned off for Expo Go in Settings.');
+    toast('Couldn’t open Calendar. Calendar is only available in the iPhone app, with calendar access allowed.');
   }
 }

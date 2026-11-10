@@ -1,11 +1,12 @@
 // PROFILE — access mode, interests, saved, plans, passport, friends,
 // followed orgs, notifications and settings.
 import { router } from 'expo-router';
-import { Alert, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/Avatars';
-import { StackHeader } from '@/components/Header';
+import { StackHeader, togglePitchMode } from '@/components/Header';
 import { Icon, type IconName } from '@/components/Icon';
 import { ProgressRing } from '@/components/ProgressRing';
 import { Stamp } from '@/components/Stamp';
@@ -15,10 +16,19 @@ import { MODE_LABEL } from '@/lib/access';
 import { haptic } from '@/lib/feedback';
 import { BADGES, badgeProgress } from '@/lib/passport';
 import { DAY_SHORT, fmtTime, MONTH_SHORT, relativeDay } from '@/lib/time';
-import { getEvent, getFriends, getOrgs, getPlace } from '@/services/dataService';
+import { getEvent, getFriends, getOrgs, getPlace, now as clockNow, demoPreset } from '@/services/dataService';
 import { useApp } from '@/state/AppState';
 import { useTheme } from '@/theme/ThemeProvider';
 import { accentFill, fonts } from '@/theme/tokens';
+import { toast } from '@/lib/toast';
+
+const DEMO_LABEL = { fri: 'Fri 6:30pm', sat: 'Sat 11am', tue: 'Tue 1pm' } as const;
+
+function demoKindOf(iso: string | null): 'live' | 'fri' | 'sat' | 'tue' {
+  if (!iso) return 'live';
+  const d = new Date(iso);
+  return d.getDay() === 5 ? 'fri' : d.getDay() === 6 ? 'sat' : d.getDay() === 2 ? 'tue' : 'live';
+}
 
 const INTERESTS: { v: Interest; l: string }[] = [
   { v: 'music', l: 'Live music' },
@@ -42,13 +52,18 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const app = useApp();
   const { profile, prefs, setProfile, setPrefs, savedEvents, savedPlaces, rsvp, plans, checkins, following, toggleFollow, submissions } = app;
-  const now = new Date();
-  const initials = (profile.name || 'You')
-    .split(' ')
-    .map((p) => p[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
+  const now = clockNow();
+  const [confirmReset, setConfirmReset] = useState(false);
+  const demoKind = demoKindOf(prefs.demoTime);
+  const initials = profile.name.trim()
+    ? profile.name
+        .trim()
+        .split(/\s+/)
+        .map((p) => p[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase()
+    : 'You';
 
   // "My plans" = going/interested events + plans, grouped by day.
   const agenda = [
@@ -278,20 +293,32 @@ export default function ProfileScreen() {
         {/* Friends */}
         <SectionHeader title="Friends" kicker="Mock friends" />
         <View style={{ paddingHorizontal: 20 }}>
-          <ToggleRow
-            icon="ghost"
-            label="Ghost Mode"
-            hint="Stop sharing your location on the map"
-            value={prefs.ghostMode}
-            onChange={(ghostMode) => setPrefs({ ghostMode })}
+          <Txt v="label" style={{ marginBottom: 8 }}>
+            Share where you are with friends
+          </Txt>
+          <Segmented<'off' | 'neighborhood' | 'exact'>
+            value={prefs.locationSharing}
+            onChange={(locationSharing) => setPrefs({ locationSharing, sharingAsked: true, ghostMode: locationSharing === 'off' })}
+            options={[
+              { value: 'off', label: 'Off' },
+              { value: 'neighborhood', label: 'Neighborhood' },
+              { value: 'exact', label: 'Exact' },
+            ]}
           />
+          <Txt v="caption" muted style={{ marginTop: 6, marginBottom: 8 }}>
+            {prefs.locationSharing === 'off'
+              ? 'Off by default. Friends can’t see you on the map.'
+              : prefs.locationSharing === 'neighborhood'
+                ? 'Friends see your neighborhood (like “Five Points”), never a building. Turns off at 4am.'
+                : 'Exact spot is shared only with friends in an active Plan. Turns off at 4am.'}
+          </Txt>
           {getFriends().map((f) => (
             <View key={f.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8, borderBottomWidth: 1, borderColor: c.line }}>
               <Avatar initials={f.initials} color={f.color} size={36} />
               <View style={{ flex: 1 }}>
                 <Txt v="bodyBold">{f.name}</Txt>
                 <Txt v="caption" muted>
-                  {f.sharing ? f.status : 'Ghost mode · location hidden'} · {MODE_LABEL[f.mode]}
+                  {f.sharing ? `${f.status} · ${f.area}` : 'Not sharing location'} · {MODE_LABEL[f.mode]}
                 </Txt>
               </View>
               {f.sharing ? <Icon name="pin" color={c.ivy} size={18} /> : <Icon name="ghost" color={c.textMuted} size={18} />}
@@ -426,23 +453,43 @@ export default function ProfileScreen() {
             label="Pitch Mode"
             hint="Floating Student ↔ Local switch for demos (or long-press the logo)"
             value={prefs.pitchMode}
-            onChange={(pitchMode) => setPrefs({ pitchMode })}
+            onChange={() => togglePitchMode(prefs, setPrefs)}
           />
+          <Txt v="label" style={{ marginTop: 8, marginBottom: 8 }}>
+            Demo clock
+          </Txt>
+          <Segmented<'live' | 'fri' | 'sat' | 'tue'>
+            value={demoKind}
+            onChange={(k) => {
+              setPrefs({ demoTime: k === 'live' ? null : demoPreset(k) });
+              toast(k === 'live' ? 'Demo clock off: showing the real time.' : `Demo clock set to ${DEMO_LABEL[k]}.`);
+            }}
+            options={[
+              { value: 'live', label: 'Live' },
+              { value: 'fri', label: DEMO_LABEL.fri },
+              { value: 'sat', label: DEMO_LABEL.sat },
+              { value: 'tue', label: DEMO_LABEL.tue },
+            ]}
+          />
+          <Txt v="caption" muted style={{ marginTop: 6 }}>
+            Pins the sample schedule to one moment so a pitch looks the same whenever you open the link.
+          </Txt>
         </View>
 
         <View style={{ paddingHorizontal: 20, gap: 10, marginTop: 20 }}>
           <Button kind="secondary" icon="plus" label="Add something to the guide" onPress={() => router.push('/submit')} />
           <Button kind="secondary" icon="chart" label="Partner Portal (demo)" onPress={() => router.push('/partner')} />
-          <Button
-            kind="ghost"
-            label="Reset demo & restart onboarding"
-            onPress={() =>
-              Alert.alert('Reset everything?', 'Clears your profile, saves, stamps and plans on this phone.', [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Reset', style: 'destructive', onPress: () => app.resetAll() },
-              ])
-            }
-          />
+          {confirmReset ? (
+            <View style={{ borderWidth: 1.5, borderColor: c.brick, padding: 12, gap: 10 }}>
+              <Txt v="bodySm">Reset everything? This clears your profile, saves, stamps and plans on this phone.</Txt>
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <Button small kind="secondary" label="Cancel" onPress={() => setConfirmReset(false)} style={{ flex: 1 }} />
+                <Button small label="Reset" onPress={() => app.resetAll()} style={{ flex: 1 }} />
+              </View>
+            </View>
+          ) : (
+            <Button kind="ghost" label="Reset demo & restart onboarding" onPress={() => setConfirmReset(true)} />
+          )}
         </View>
 
         <View

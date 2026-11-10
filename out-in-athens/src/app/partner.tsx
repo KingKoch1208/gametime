@@ -2,16 +2,18 @@
 // Post an event, see fake analytics, request a clearly-labeled Featured slot.
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { BottomSheet } from '@/components/BottomSheet';
 import { StackHeader } from '@/components/Header';
 import { Icon } from '@/components/Icon';
 import { Stamp } from '@/components/Stamp';
 import { Button, Chip, Paper, Sheet, Txt } from '@/components/ui';
 import { haptic } from '@/lib/feedback';
+import { toast } from '@/lib/toast';
 import { DAY_SHORT, relativeDay } from '@/lib/time';
-import { getOrg, getOrgAnalytics } from '@/services/dataService';
+import { getOrg, getOrgAnalytics, now as clockNow } from '@/services/dataService';
 import { useApp } from '@/state/AppState';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, palette } from '@/theme/tokens';
@@ -23,10 +25,11 @@ export default function PartnerPortal() {
   const insets = useSafeAreaInsets();
   const { featureRequests, requestFeature } = useApp();
   const [orgId, setOrgId] = useState('visit-athens');
+  const [featureFor, setFeatureFor] = useState<string | null>(null);
   const org = getOrg(orgId)!;
   const a = getOrgAnalytics(orgId);
   const max = Math.max(...a.week);
-  const now = new Date();
+  const now = clockNow();
   const days = Array.from({ length: 7 }, (_, i) => DAY_SHORT[(now.getDay() - 6 + i + 7) % 7]);
 
   return (
@@ -66,7 +69,13 @@ export default function PartnerPortal() {
         </View>
 
         <Sheet style={{ padding: 14, marginTop: 12 }}>
-          <Txt v="label">Views per day</Txt>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Txt v="label">Views per day</Txt>
+            <Stamp kind="pending" text="Sample data" animate={false} />
+          </View>
+          <Txt v="caption" muted style={{ marginTop: 4 }}>
+            Peak {max.toLocaleString()} views
+          </Txt>
           <View
             style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8, height: 120, marginTop: 12 }}
             accessible
@@ -132,33 +141,16 @@ export default function PartnerPortal() {
                     <Txt v="caption" muted>
                       {relativeDay(r.event.start, now)} · {r.views.toLocaleString()} views · {r.saves} saves · {r.going} going
                     </Txt>
+                    <Txt v="caption" color={c.ivy}>
+                      {Math.round(r.carFree * 100)}% of directions by walk, bike or bus
+                    </Txt>
                   </View>
                   {r.event.featured ? (
                     <Stamp kind="featured" animate={false} />
                   ) : requested ? (
                     <Stamp kind="pending" text="Featured requested" animate={false} />
                   ) : (
-                    <Chip
-                      small
-                      icon="star"
-                      label="Request Featured"
-                      onPress={() =>
-                        Alert.alert(
-                          'Request Featured placement?',
-                          'Featured listings get one clearly labeled “Featured” slot on Now and Events for 7 days. Students and locals always see that it’s sponsored. (Demo: no charge.)',
-                          [
-                            { text: 'Cancel', style: 'cancel' },
-                            {
-                              text: 'Request',
-                              onPress: () => {
-                                requestFeature(r.event.id);
-                                haptic.success();
-                              },
-                            },
-                          ],
-                        )
-                      }
-                    />
+                    <Chip small icon="star" label="Request Featured" onPress={() => setFeatureFor(r.event.id)} />
                   )}
                 </View>
               </View>
@@ -178,6 +170,42 @@ export default function PartnerPortal() {
           </Txt>
         </View>
       </ScrollView>
+
+      <BottomSheet visible={!!featureFor} onClose={() => setFeatureFor(null)} title="Request Featured" heightPct={0.62}>
+        <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24, gap: 12 }}>
+          <Txt v="bodySm" muted>
+            One clearly labeled “Featured” slot on Now and Events. Never placed in “I’m bored”. Everyone sees who paid for it.
+          </Txt>
+          <Stamp kind="pending" text="Sample pricing" animate={false} />
+          {TIERS.map((t) => (
+            <Sheet
+              key={t.id}
+              style={{ padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }}
+              label={`${t.name}, ${t.price}`}
+              onPress={() => {
+                if (featureFor) requestFeature(featureFor);
+                haptic.success();
+                setFeatureFor(null);
+                toast(`${t.name} requested. The Out in Athens team will confirm by email (demo).`);
+              }}
+            >
+              <View style={{ flex: 1 }}>
+                <Txt v="bodyBold">{t.name}</Txt>
+                <Txt v="caption" muted>
+                  {t.detail}
+                </Txt>
+              </View>
+              <Txt style={{ fontFamily: fonts.displayBlack, fontSize: 20, color: c.text }}>{t.price}</Txt>
+            </Sheet>
+          ))}
+        </ScrollView>
+      </BottomSheet>
     </Paper>
   );
 }
+
+const TIERS = [
+  { id: 'weekend', name: 'Weekend slot', detail: 'Fri 5pm – Sun midnight', price: '$40' },
+  { id: 'week', name: 'Week slot', detail: '7 days, Now + Events', price: '$90' },
+  { id: 'month', name: 'Month of Saturdays', detail: '4 weekend slots', price: '$140' },
+];

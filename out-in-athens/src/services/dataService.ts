@@ -9,8 +9,8 @@ import { FOOD, FOOD_RESOURCES } from '@/data/food';
 import { PLACES } from '@/data/places';
 import { FRIENDS, GUIDES, ORGS } from '@/data/social';
 import type { AthensEvent, EventCategory, ExploreCategory, FoodTag, Friend, Guide, Interest, LatLng, Org, Place, Transport, Weather } from '@/data/types';
-import { accessFor, type AccessResult, type Viewer } from '@/lib/access';
-import { distanceKm, isCarFree, isWalkable, MOCK_ME, NEAR_RADIUS_KM } from '@/lib/geo';
+import { accessFor, type AccessResult, recommendable, type Viewer } from '@/lib/access';
+import { distanceKm, isCarFree, isWalkable, MOCK_ME, NEAR_RADIUS_KM, travelTimes } from '@/lib/geo';
 import { isLive, isOpenAt, overlaps, sameDay, type TimeWindow, windowRange } from '@/lib/time';
 
 export type Listed<T> = {
@@ -20,20 +20,44 @@ export type Listed<T> = {
   live: boolean; // events: happening now. places: open now.
 };
 
-// ——— Session cache ———
-let cachedAt = new Date();
-let EVENTS: AthensEvent[] = buildEvents(cachedAt);
+// ——— Clock ———
+// Live by default. Pitch Mode can pin a demo clock (e.g. this Friday 6:30pm) so the
+// schedule looks the same whenever the link is opened. The demo clock still ticks.
+let clockOffsetMs = 0;
+let demoKey: string | null = null;
 
 export function now(): Date {
-  return new Date();
+  return new Date(Date.now() + clockOffsetMs);
 }
+
+/** Set (ISO string) or clear (null) the demo clock. Rebuilds the sample schedule. */
+export function setDemoTime(iso: string | null) {
+  if (iso === demoKey) return;
+  demoKey = iso;
+  clockOffsetMs = iso ? new Date(iso).getTime() - Date.now() : 0;
+  EVENTS = buildEvents(now());
+}
+
+/** Upcoming Friday 6:30pm (today if it's Friday), Saturday 11am, Tuesday 1pm. */
+export function demoPreset(kind: 'fri' | 'sat' | 'tue'): string {
+  const base = new Date();
+  base.setHours(0, 0, 0, 0);
+  const target = { fri: 5, sat: 6, tue: 2 }[kind];
+  base.setDate(base.getDate() + ((target - base.getDay() + 7) % 7));
+  if (kind === 'fri') base.setHours(18, 30, 0, 0);
+  if (kind === 'sat') base.setHours(11, 0, 0, 0);
+  if (kind === 'tue') base.setHours(13, 0, 0, 0);
+  return base.toISOString();
+}
+
+// ——— Session cache ———
+let EVENTS: AthensEvent[] = buildEvents(now());
 
 /** Re-generate relative dates (pull-to-refresh). */
 export async function refresh(): Promise<void> {
   // TODO: backend — fetch new data here.
   await new Promise((r) => setTimeout(r, 700));
-  cachedAt = new Date();
-  EVENTS = buildEvents(cachedAt);
+  EVENTS = buildEvents(now());
 }
 
 export function myLocation(): LatLng {
@@ -71,7 +95,7 @@ export function getEvents(f: EventFilters): Listed<AthensEvent>[] {
     .map((e) => ({ item: e, acc: accessFor(e, f.viewer), km: distanceKm(me, e.coords), live: isLive(e.start, e.end, t) }))
     .filter(({ item: e, acc }) => {
       if (!acc.visible) return false;
-      if (f.openToMe && !acc.canAttend) return false;
+      if (f.openToMe && !recommendable(acc)) return false;
       if (f.categories?.length && !f.categories.includes(e.category)) return false;
       if (range && !overlaps(e.start, e.end, range)) return false;
       if (f.day && !sameDay(e.start, f.day)) return false;
@@ -87,7 +111,8 @@ export function getEvents(f: EventFilters): Listed<AthensEvent>[] {
       if (f.petFriendly && !e.petFriendly) return false;
       if (f.interests?.length && !e.interests.some((i) => f.interests!.includes(i))) return false;
       if (!f.includeAway && e.isAway && !f.categories?.includes('sports')) return false;
-      if (q && !`${e.title} ${e.venue} ${e.description}`.toLowerCase().includes(q)) return false;
+      if (q && !`${e.title} ${e.venue} ${e.description} ${e.category} ${e.interests.join(' ')} ${e.lineup?.join(' ') ?? ''}`.toLowerCase().includes(q))
+        return false;
       return true;
     })
     .sort((a, b) => {
@@ -113,7 +138,13 @@ export function getEventsByOrg(orgId: string): AthensEvent[] {
 
 export function getFeatured(viewer: Viewer): Listed<AthensEvent> | undefined {
   // TODO: backend — paid placement from the Partner Portal. Always labeled "Featured".
-  return getEvents({ viewer, openToMe: true }).find((l) => l.item.featured) ?? getEvents({ viewer, openToMe: true, window: 'week' })[0];
+  // Only a partner org can buy the slot, and the caption names who paid.
+  const eligible = (e: AthensEvent) => {
+    const org = e.orgId ? getOrg(e.orgId) : undefined;
+    return !!org && org.kind !== 'club' && org.kind !== 'media';
+  };
+  const list = getEvents({ viewer, openToMe: true, window: 'twoWeeks' }).filter((l) => eligible(l.item));
+  return list.find((l) => l.item.featured) ?? list[0];
 }
 
 // ——— Places & food ———
@@ -142,7 +173,7 @@ export function getPlaces(f: PlaceFilters): Listed<Place>[] {
     .map((p) => ({ item: p, acc: accessFor(p, f.viewer), km: distanceKm(me, p.coords), live: isOpenAt(p.hours, t) }))
     .filter(({ item: p, acc, live }) => {
       if (!acc.visible) return false;
-      if (f.openToMe && !acc.canAttend) return false;
+      if (f.openToMe && !recommendable(acc)) return false;
       if (f.category === 'free' && p.cost > 0) return false;
       if (f.category && f.category !== 'free' && !p.exploreCategories.includes(f.category)) return false;
       if (f.foodTags?.length && !f.foodTags.every((tag) => p.foodTags?.includes(tag))) return false;
@@ -152,7 +183,13 @@ export function getPlaces(f: PlaceFilters): Listed<Place>[] {
       if (f.freeOnly && p.cost > 0) return false;
       if (f.maxPrice != null && (p.avgPrice ?? p.cost) > f.maxPrice) return false;
       if (f.indoorOnly && !p.indoor) return false;
-      if (q && !`${p.name} ${p.description} ${p.goodFor.join(' ')}`.toLowerCase().includes(q)) return false;
+      if (
+        q &&
+        !`${p.name} ${p.description} ${p.goodFor.join(' ')} ${p.neighborhood} ${p.exploreCategories.join(' ')} ${p.foodTags?.join(' ') ?? ''} ${p.foodKind ?? ''}`
+          .toLowerCase()
+          .includes(q)
+      )
+        return false;
       return true;
     })
     .sort((a, b) => {
@@ -175,7 +212,7 @@ export function getDealsForDay(day: number, viewer: Viewer): { place: Place; tex
 export function getFoodResources(viewer: Viewer) {
   // Resources are always listed so people know they exist, but UGA-only ones
   // are clearly labeled for locals rather than hidden.
-  return FOOD_RESOURCES.map((r) => ({ item: r, acc: accessFor(r, { ...viewer, showUgaOnly: true }) }));
+  return FOOD_RESOURCES.map((r) => ({ item: r, acc: accessFor(r, { ...viewer, showUgaOnly: true }) })).filter((r) => r.acc.visible);
 }
 
 // ——— "I'm bored" deck ———
@@ -223,8 +260,8 @@ export function getOrg(id: string): Org | undefined {
   return ORGS.find((o) => o.id === id);
 }
 
-export function getGuides(): Guide[] {
-  return GUIDES;
+export function getGuides(mode?: Viewer['mode']): Guide[] {
+  return mode ? GUIDES.filter((g) => g.modes.includes(mode)) : GUIDES;
 }
 
 export function getGuide(id: string): Guide | undefined {
@@ -243,29 +280,78 @@ export function getWeather(t: Date, override: 'auto' | 'rain' | 'clear'): Weathe
   const roll = (doy * 7) % 10;
   let condition: Weather['condition'] = roll < 2 ? 'rain' : roll < 4 ? 'cloudy' : 'clear';
   if (override !== 'auto') condition = override;
-  const label = condition === 'rain' ? 'rain' : condition === 'cloudy' ? 'cloudy' : hr >= 19 || hr < 6 ? 'clear' : 'sunny';
+  const label = condition === 'rain' ? 'rain' : condition === 'cloudy' ? 'cloudy' : hr >= 18 || hr < 6 ? 'clear' : 'sunny';
   return { tempF, condition, label };
 }
 
 // ——— Analytics (Partner Portal mock) ———
 
 export function getOrgAnalytics(orgId: string) {
+  // SAMPLE analytics, derived from each org's own listings so partners differ.
   const evs = getEventsByOrg(orgId);
-  const rows = evs.map((e) => ({
-    event: e,
-    views: e.interested * 9 + 140,
-    saves: Math.round(e.interested * 0.7),
-    going: e.going,
-  }));
-  const week = [0.6, 0.8, 0.7, 1.1, 1.4, 1.9, 1.5].map((m, i) => Math.round(m * (420 + orgId.length * 31) + i * 12));
+  const seed = hash(orgId);
+  const me = myLocation();
+  const rows = evs.map((e) => {
+    const t = travelTimes(me, e.coords);
+    // Share of "Directions" taps that would be walk / bike / bus, from how close it is.
+    const carFree = Math.max(0.15, Math.min(0.92, 1 - Math.min(t.walk, t.bike * 2.5, t.bus * 1.6) / 70));
+    return { event: e, views: e.interested * 9 + 140, saves: Math.round(e.interested * 0.7), going: e.going, carFree };
+  });
+  const base = 300 + (seed % 400);
+  const week = Array.from({ length: 7 }, (_, i) => Math.round(base * (0.55 + 0.45 * Math.abs(Math.sin(seed * 0.7 + i * (0.8 + (seed % 5) * 0.15)))) + i * 10));
+
+  const W: Record<string, [number, number, number]> = {
+    uga_id: [1, 0, 0],
+    uga_guest_ok: [0.85, 0.15, 0],
+    open: [0.4, 0.45, 0.15],
+    ticketed: [0.35, 0.45, 0.2],
+    '18+': [0.35, 0.45, 0.2],
+    '21+': [0.35, 0.45, 0.2],
+  };
+  const mix = evs.reduce((acc, e) => acc.map((v, i) => v + W[e.access][i] * (1 + e.going / 100)) as [number, number, number], [0, 0, 0] as [
+    number,
+    number,
+    number,
+  ]);
+  const total = mix[0] + mix[1] + mix[2] || 1;
   return {
     rows,
     totals: {
-      views: rows.reduce((s, r) => s + r.views, 0),
-      saves: rows.reduce((s, r) => s + r.saves, 0),
-      going: rows.reduce((s, r) => s + r.going, 0),
+      views: rows.reduce((sum, r) => sum + r.views, 0),
+      saves: rows.reduce((sum, r) => sum + r.saves, 0),
+      going: rows.reduce((sum, r) => sum + r.going, 0),
     },
     week,
-    audience: { students: 0.58, locals: 0.34, visitors: 0.08 },
+    audience: blendAudience(orgId, evs.length ? [mix[0] / total, mix[1] / total, mix[2] / total] : [0.4, 0.45, 0.15]),
   };
+}
+
+// Who each partner mostly reaches (sample), blended 50/50 with what their listings imply.
+const AUDIENCE_BIAS: Record<string, [number, number, number]> = {
+  'visit-athens': [0.2, 0.45, 0.35],
+  'uga-rec': [0.97, 0.03, 0],
+  'acc-leisure': [0.1, 0.8, 0.1],
+  sustainability: [0.65, 0.3, 0.05],
+  'farmers-market': [0.25, 0.6, 0.15],
+  'red-black': [0.75, 0.15, 0.1],
+};
+
+function blendAudience(orgId: string, derived: [number, number, number]) {
+  const b = AUDIENCE_BIAS[orgId] ?? derived;
+  const m = derived.map((d, i) => (d + b[i]) / 2);
+  return { students: m[0], locals: m[1], visitors: m[2] };
+}
+
+function hash(str: string): number {
+  let h = 7;
+  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+  return h;
+}
+
+/** The next few things this person can actually go to (I'm bored's quiet-hour fallback). */
+export function getUpcoming(viewer: Viewer, n = 3): Listed<AthensEvent>[] {
+  const t = now();
+  return getEvents({ viewer, openToMe: true, window: 'twoWeeks' })
+    .filter((l) => l.item.start > t && !l.item.isAway)
+    .slice(0, n);
 }

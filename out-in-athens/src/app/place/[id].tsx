@@ -1,7 +1,7 @@
 // PLACE DETAIL — hours, cost, access, good-for, travel times, check-in stamp.
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Animated, Pressable, ScrollView, View } from 'react-native';
+import { Animated, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Fact, Pill } from '@/components/DetailBits';
@@ -19,10 +19,11 @@ import { openDirections } from '@/lib/directions';
 import { haptic, sound } from '@/lib/feedback';
 import { MOCK_ME } from '@/lib/geo';
 import { DAY_SHORT, fmtHour, hoursForDay, openStatus } from '@/lib/time';
-import { getEventsAtPlace, getOrg, getPlace } from '@/services/dataService';
+import { getEventsAtPlace, getOrg, getPlace, now as clockNow } from '@/services/dataService';
 import { useApp } from '@/state/AppState';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, palette } from '@/theme/tokens';
+import { toast } from '@/lib/toast';
 
 export default function PlaceDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -43,7 +44,7 @@ export default function PlaceDetail() {
 
   const acc = accessFor(p, viewer);
   const locked = !acc.canAttend;
-  const now = new Date();
+  const now = clockNow();
   const status = openStatus(p.hours, now);
   const saved = savedPlaces.includes(p.id);
   const stamped = !!checkins[p.id];
@@ -82,7 +83,7 @@ export default function PlaceDetail() {
         }
       />
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}>
-        <PhotoBlock accent={locked ? 'ink' : p.accent} icon={placeIcon(p)} height={200} seed={p.id.length} label={`${p.photoCount} photos · placeholder`} />
+        <PhotoBlock accent={locked ? 'ink' : p.accent} icon={placeIcon(p)} height={200} seed={p.id.length} label="Photos coming from venue" />
         <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
           <Txt v="labelSm" color={c.brick}>
             {p.neighborhood}
@@ -224,7 +225,8 @@ export default function PlaceDetail() {
             icon={placeIcon(p)}
             color={color}
             label={p.name}
-            onPress={() => !locked && openDirections(p.coords, p.name, profile.transport)}
+            locked={locked}
+            onPress={() => openDirections(p.coords, p.name, profile.transport)}
           />
           {!locked && (
             <View style={{ marginTop: 10 }}>
@@ -267,7 +269,7 @@ export default function PlaceDetail() {
             onPress={() => {
               report(p.id);
               haptic.warn();
-              Alert.alert('Thanks!', 'We’ll double-check the hours and details. (Prototype: saved locally.)');
+              toast('Thanks! We’ll double-check the hours and details.');
             }}
             style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}
           >

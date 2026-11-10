@@ -1,7 +1,7 @@
 // EVENT DETAIL — poster header, date stamp, access, RSVP, actions, extras.
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef } from 'react';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Defs, Pattern, Rect } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -21,10 +21,11 @@ import { openDirections } from '@/lib/directions';
 import { haptic } from '@/lib/feedback';
 import { MOCK_ME } from '@/lib/geo';
 import { DAY_LONG, fmtTime, isLive, MONTH_SHORT, whenLabel } from '@/lib/time';
-import { getEvent, getOrg } from '@/services/dataService';
+import { getEvent, getOrg, now as clockNow } from '@/services/dataService';
 import { useApp } from '@/state/AppState';
 import { useTheme } from '@/theme/ThemeProvider';
 import { accentFill, fonts, onAccent, palette } from '@/theme/tokens';
+import { toast } from '@/lib/toast';
 
 export default function EventDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -45,7 +46,7 @@ export default function EventDetail() {
 
   const acc = accessFor(e, viewer);
   const locked = !acc.canAttend;
-  const now = new Date();
+  const now = clockNow();
   const live = isLive(e.start, e.end, now);
   const fill = locked ? c.locked : accentFill(c, e.accent);
   const fg = locked ? palette.paper : onAccent(e.accent);
@@ -155,6 +156,26 @@ export default function EventDetail() {
             </View>
           )}
 
+          {acc.needsStudent && (
+            <View style={{ borderWidth: 1.5, borderColor: c.ivy, padding: 14, marginBottom: 16, flexDirection: 'row', gap: 10 }}>
+              <Icon name="users" color={c.ivy} size={22} />
+              <Txt v="bodySm" style={{ flex: 1 }}>
+                <Txt v="bodySm" style={{ fontWeight: '700' }}>
+                  Locals need a UGA student with them.
+                </Txt>{' '}
+                Going with a friend who’s a student? Tap Going.
+              </Txt>
+            </View>
+          )}
+          {acc.ageUnknown && (
+            <View style={{ borderWidth: 1.5, borderStyle: 'dashed', borderColor: c.lineStrong, padding: 12, marginBottom: 16, flexDirection: 'row', gap: 10 }}>
+              <Icon name="info" color={c.text} size={20} />
+              <Txt v="bodySm" style={{ flex: 1 }}>
+                This is {e.access}. Set your age in Profile to see if you can go.
+              </Txt>
+            </View>
+          )}
+
           {/* RSVP */}
           {!locked && (
             <>
@@ -215,7 +236,8 @@ export default function EventDetail() {
                 icon={CATEGORY_ICON[e.category]}
                 color={locked ? 'locked' : 'brick'}
                 label={e.venue}
-                onPress={() => !locked && openDirections(e.coords, e.venue, profile.transport)}
+                locked={locked}
+                onPress={() => openDirections(e.coords, e.venue, profile.transport)}
               />
               {!locked && <TravelBadges from={MOCK_ME} to={e.coords} showCar style={{ marginTop: 10 }} />}
             </>
@@ -257,7 +279,7 @@ export default function EventDetail() {
                   kind="mustard"
                   icon="ticket"
                   label="Get tickets (placeholder)"
-                  onPress={() => Alert.alert('Ticket link', 'In the real app this opens the venue’s ticketing page.')}
+                  onPress={() => toast('In the real app this opens the venue’s ticketing page.')}
                 />
               )}
             </Sheet>
@@ -318,7 +340,7 @@ export default function EventDetail() {
             onPress={() => {
               report(e.id);
               haptic.warn();
-              Alert.alert('Thanks for the heads up', 'We’ll double-check this listing. (Prototype: saved locally.)');
+              toast('Thanks for the heads up. We’ll double-check this listing.');
             }}
             style={{ marginTop: 14, flexDirection: 'row', gap: 6, alignItems: 'center' }}
           >

@@ -1,16 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import { getWeather } from '@/services/dataService';
+import { getWeather, now as clockNow } from '@/services/dataService';
 import { useApp } from '@/state/AppState';
 
-/** Current time, re-rendering every minute. */
+/** Current time (or the Pitch Mode demo clock), re-rendering every minute. */
 export function useNow(): Date {
-  const [now, setNow] = useState(() => new Date());
+  const { prefs } = useApp();
+  const [tick, setTick] = useState(0);
   useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 60_000);
+    const id = setInterval(() => setTick((t) => t + 1), 60_000);
     return () => clearInterval(id);
   }, []);
-  return now;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  return useMemo(() => clockNow(), [tick, prefs.demoTime]);
 }
 
 export function useWeather(now: Date) {

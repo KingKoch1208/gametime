@@ -9,9 +9,9 @@ import { EmptyState } from '@/components/misc';
 import { PhotoBlock, placeIcon } from '@/components/PlaceCard';
 import { Stamp } from '@/components/Stamp';
 import { Paper, Squiggle, Txt } from '@/components/ui';
-import { accessFor } from '@/lib/access';
+import { accessFor, recommendable } from '@/lib/access';
 import { whenLabel, openStatus } from '@/lib/time';
-import { getEvent, getGuide, getPlace } from '@/services/dataService';
+import { getEvent, getGuide, getPlace, now as clockNow } from '@/services/dataService';
 import { useApp } from '@/state/AppState';
 import { useTheme } from '@/theme/ThemeProvider';
 import { accentFill, fonts, onAccent } from '@/theme/tokens';
@@ -25,7 +25,7 @@ export default function GuideScreen() {
   if (!g) return <EmptyState title="Guide not found" />;
   const fill = accentFill(c, g.accent);
   const fg = onAccent(g.accent);
-  const now = new Date();
+  const now = clockNow();
 
   // Resolve items, and drop anything this viewer can't get into.
   const items = g.items
@@ -34,7 +34,7 @@ export default function GuideScreen() {
         const e = getEvent(it.refId);
         if (!e || e.end < now) return null;
         const acc = accessFor(e, viewer);
-        return acc.canAttend
+        return recommendable(acc)
           ? {
               it,
               title: e.title,
@@ -49,7 +49,7 @@ export default function GuideScreen() {
       const p = getPlace(it.refId);
       if (!p) return null;
       const acc = accessFor(p, viewer);
-      return acc.canAttend
+      return recommendable(acc)
         ? { it, title: p.name, sub: `${openStatus(p.hours, now).label} · ${p.neighborhood}`, accent: p.accent, icon: placeIcon(p), acc, href: `/place/${p.id}` }
         : null;
     })

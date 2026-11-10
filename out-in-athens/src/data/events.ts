@@ -200,7 +200,6 @@ const SEEDS: Seed[] = [
     lineup: ['Wildflower Static', 'Pulaski Heights', 'DJ Hot Corner'],
     ticketUrl: 'https://example.com/tickets',
     studentTicketNote: '$5 off with UGA ID at the box office (sample)',
-    featured: true,
   },
   {
     id: '40w-deep-clay',
@@ -220,6 +219,7 @@ const SEEDS: Seed[] = [
   },
   {
     id: 'symphony-fall',
+    featured: true,
     title: 'Athens Symphony: Fall Concert',
     category: 'concerts',
     interests: ['music', 'family'],
@@ -418,6 +418,7 @@ const SEEDS: Seed[] = [
   },
   {
     id: 'im-flag-finals',
+    audience: 'students',
     title: 'Intramural Flag Football Finals',
     category: 'campus',
     interests: ['sports'],
@@ -524,6 +525,7 @@ const SEEDS: Seed[] = [
   // ——— Campus ———
   {
     id: 'club-fair',
+    audience: 'students',
     title: 'Spring Club Preview Fair',
     category: 'campus',
     interests: ['nerdy', 'volunteer'],
@@ -587,6 +589,7 @@ const SEEDS: Seed[] = [
   },
   {
     id: 'study-jam',
+    audience: 'students',
     title: 'Late-Night Study Jam + Free Coffee',
     category: 'campus',
     interests: ['study'],
@@ -601,6 +604,7 @@ const SEEDS: Seed[] = [
   },
   {
     id: 'career-mixer',
+    audience: 'students',
     title: 'Career Center Alumni Mixer',
     category: 'campus',
     interests: ['nerdy'],
@@ -649,6 +653,7 @@ const SEEDS: Seed[] = [
   },
   {
     id: 'pottery-basics',
+    recurring: true,
     title: 'Pottery Basics (4-week class)',
     category: 'community',
     interests: ['arts'],
@@ -663,6 +668,7 @@ const SEEDS: Seed[] = [
   },
   {
     id: 'story-time',
+    recurring: true,
     title: 'Story Time & Crafts',
     category: 'community',
     interests: ['family'],
@@ -724,6 +730,7 @@ const SEEDS: Seed[] = [
   // ——— Outdoors ———
   {
     id: 'firefly-ride',
+    recurring: true,
     title: 'Firefly Trail Social Ride',
     category: 'outdoors',
     interests: ['outdoors', 'fitness'],
@@ -790,6 +797,7 @@ const SEEDS: Seed[] = [
   },
   {
     id: 'food-bank-shift',
+    recurring: true,
     title: 'Food Bank Sorting Shift',
     category: 'volunteer',
     interests: ['volunteer'],
@@ -819,6 +827,7 @@ const SEEDS: Seed[] = [
   },
   {
     id: 'dog-walking',
+    recurring: true,
     title: 'Shelter Dog Walking Hour',
     category: 'volunteer',
     interests: ['volunteer', 'family'],
@@ -870,12 +879,14 @@ function startOfDay(d: Date): Date {
   return x;
 }
 
-function resolveWhen(w: When, now: Date): { start: Date; end: Date } {
+function resolveWhen(w: When, now: Date, lateNight = false): { start: Date; end: Date } {
   if ('rel' in w) {
     const start = new Date(now.getTime() + w.rel * 60_000);
     start.setSeconds(0, 0);
     // Round to the nearest quarter hour so times look real.
     start.setMinutes(Math.round(start.getMinutes() / 15) * 15);
+    // Nothing daytime-ish "happens" at 3am: clamp 1am–7am starts to 7am unless flagged late-night.
+    if (!lateNight && start.getHours() >= 1 && start.getHours() < 7) start.setHours(7, 0, 0, 0);
     return { start, end: new Date(start.getTime() + w.mins * 60_000) };
   }
   const base = startOfDay(now);
@@ -903,7 +914,7 @@ export function buildEvents(now: Date): AthensEvent[] {
   return SEEDS.map((s) => {
     const { when, v, ...rest } = s;
     const venue = V[v];
-    const { start, end } = resolveWhen(when, now);
+    const { start, end } = resolveWhen(when, now, s.lateNight);
     const interested = s.interested ?? seeded(s.id, 12, 340);
     return {
       ...rest,

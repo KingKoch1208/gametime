@@ -1,16 +1,27 @@
 // Screen header: wordmark (long-press = Pitch Mode), title, profile avatar top-right.
 import { router } from 'expo-router';
 import type { ReactNode } from 'react';
-import { Alert, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { haptic } from '@/lib/feedback';
+import { toast } from '@/lib/toast';
+import { demoPreset } from '@/services/dataService';
 import { useApp } from '@/state/AppState';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts } from '@/theme/tokens';
 import { Avatar } from './Avatars';
 import { Icon } from './Icon';
 import { Txt } from './ui';
+
+type PrefsApi = Pick<ReturnType<typeof useApp>, 'prefs' | 'setPrefs'>;
+
+/** Pitch Mode on: pin the demo clock to this Friday 6:30pm (unless one is already set). */
+export function togglePitchMode(prefs: PrefsApi['prefs'], setPrefs: PrefsApi['setPrefs']) {
+  const on = !prefs.pitchMode;
+  setPrefs({ pitchMode: on, pitchHintSeen: true, ...(on && !prefs.demoTime ? { demoTime: demoPreset('fri') } : {}) });
+  toast(on ? 'Pitch Mode on: demo clock set to Friday 6:30pm. Long-press the logo again to turn it off.' : 'Pitch Mode off.');
+}
 
 export function Wordmark({ size = 15 }: { size?: number }) {
   const { c } = useTheme();
@@ -23,13 +34,9 @@ export function Wordmark({ size = 15 }: { size?: number }) {
       delayLongPress={600}
       onLongPress={() => {
         haptic.stamp();
-        const on = !prefs.pitchMode;
-        setPrefs({ pitchMode: on });
-        Alert.alert(
-          on ? 'Pitch Mode on' : 'Pitch Mode off',
-          on ? 'A floating Student ↔ Local switch is now pinned to the screen. Long-press the logo again to hide it.' : undefined,
-        );
+        togglePitchMode(prefs, setPrefs);
       }}
+      hitSlop={{ top: 10, bottom: 10, left: 4, right: 4 }}
       style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
     >
       <View style={{ borderWidth: 1.5, borderColor: c.brick, paddingHorizontal: 5, paddingVertical: 1, transform: [{ rotate: '-3deg' }] }}>
@@ -47,12 +54,15 @@ export function Wordmark({ size = 15 }: { size?: number }) {
 export function ProfileButton() {
   const { c } = useTheme();
   const { profile } = useApp();
-  const initials = (profile.name || 'You')
-    .split(' ')
-    .map((p) => p[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
+  const initials = profile.name.trim()
+    ? profile.name
+        .trim()
+        .split(/\s+/)
+        .map((p) => p[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase()
+    : 'You';
   return (
     <Pressable
       accessibilityRole="button"

@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { TabHeader } from '@/components/Header';
+import { SearchBar } from '@/components/SearchBar';
 import { Icon } from '@/components/Icon';
 import { EmptyState, FreshStamp, useStampRefresh } from '@/components/misc';
 import { PlaceCard } from '@/components/PlaceCard';
@@ -49,7 +50,8 @@ export default function FoodScreen() {
 
   const has = (k: QuickKey) => quick.includes(k);
   const toggle = (k: QuickKey) => setQuick((q) => (q.includes(k) ? q.filter((x) => x !== k) : [...q, k]));
-  const filtering = quick.length > 0 || diet.length > 0;
+  const [search, setSearch] = useState('');
+  const filtering = quick.length > 0 || diet.length > 0 || search.trim().length > 0;
 
   const results = useMemo(() => {
     const tags: FoodTag[] = [...diet];
@@ -57,12 +59,12 @@ export default function FoodScreen() {
     if (has('coffee')) tags.push('coffee');
     if (has('sweet')) tags.push('sweet');
     if (has('healthy')) tags.push('healthy');
-    const f: PlaceFilters = { viewer, kind: 'food', foodTags: tags, openNow: has('open'), maxPrice: has('cheap') ? 10 : undefined };
+    const f: PlaceFilters = { viewer, kind: 'food', foodTags: tags, openNow: has('open'), maxPrice: has('cheap') ? 10 : undefined, query: search };
     let r = getPlaces(f);
     if (has('deals')) r = r.filter((l) => l.item.deals?.some((d) => d.day === now.getDay()));
     return r;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [quick, diet, viewer, tick]);
+  }, [quick, diet, viewer, tick, search]);
 
   const deals = getDealsForDay(dealDay, viewer);
   const trucks = getPlaces({ viewer, kind: 'food', foodKind: 'truck' });
@@ -83,6 +85,7 @@ export default function FoodScreen() {
             </Txt>
           }
         />
+        <SearchBar value={search} onChange={setSearch} placeholder="Search food, coffee, halal…" />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 8, paddingTop: 16 }}>
           {QUICK.map((q) => (
             <Chip key={q.key} label={q.label} active={has(q.key)} onPress={() => toggle(q.key)} />

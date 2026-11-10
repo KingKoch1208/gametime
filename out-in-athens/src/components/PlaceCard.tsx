@@ -3,7 +3,7 @@
 import { router } from 'expo-router';
 import { memo } from 'react';
 import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
-import Svg, { Circle, Defs, Pattern, Rect } from 'react-native-svg';
+import Svg, { Circle, Defs, Path, Pattern, Rect } from 'react-native-svg';
 
 import type { Accent, Place } from '@/data/types';
 import type { AccessResult } from '@/lib/access';
@@ -17,6 +17,7 @@ import { CATEGORY_ICON, Icon, type IconName } from './Icon';
 import { Stamp } from './Stamp';
 import { TravelBadges } from './TravelBadges';
 import { Txt } from './ui';
+import { now as clockNow } from '@/services/dataService';
 
 export function placeIcon(p: Place): IconName {
   if (p.kind === 'food') return CATEGORY_ICON[p.foodKind ?? 'restaurant'] ?? 'food';
@@ -42,14 +43,32 @@ export function PhotoBlock({
   const { c } = useTheme();
   const fill = accentFill(c, accent);
   const fg = onAccent(accent);
-  const pid = `ht-${accent}-${seed}`;
+  const kind = patternFor(icon);
+  const pid = `pt-${kind}-${accent}-${seed}`;
   return (
     <View style={[{ height, backgroundColor: fill, overflow: 'hidden' }, style]}>
       <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
         <Defs>
-          <Pattern id={pid} patternUnits="userSpaceOnUse" width={7} height={7} patternTransform={`rotate(${20 + (seed % 4) * 10})`}>
-            <Circle cx={3.5} cy={3.5} r={1.3} fill={fg} opacity={0.22} />
-          </Pattern>
+          {kind === 'dots' && (
+            <Pattern id={pid} patternUnits="userSpaceOnUse" width={7} height={7} patternTransform={`rotate(${20 + (seed % 4) * 10})`}>
+              <Circle cx={3.5} cy={3.5} r={1.3} fill={fg} opacity={0.22} />
+            </Pattern>
+          )}
+          {kind === 'stripes' && (
+            <Pattern id={pid} patternUnits="userSpaceOnUse" width={10} height={10} patternTransform="rotate(-35)">
+              <Rect x={0} y={0} width={3} height={10} fill={fg} opacity={0.14} />
+            </Pattern>
+          )}
+          {kind === 'grid' && (
+            <Pattern id={pid} patternUnits="userSpaceOnUse" width={14} height={14}>
+              <Path d="M14 0H0V14" stroke={fg} strokeOpacity={0.18} strokeWidth={1} fill="none" />
+            </Pattern>
+          )}
+          {kind === 'waves' && (
+            <Pattern id={pid} patternUnits="userSpaceOnUse" width={24} height={12}>
+              <Path d="M0 6 Q6 0 12 6 T24 6" stroke={fg} strokeOpacity={0.2} strokeWidth={1.4} fill="none" />
+            </Pattern>
+          )}
         </Defs>
         <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${pid})`} />
         <Circle cx={`${70 + (seed % 3) * 8}%`} cy="25%" r={height * 0.55} fill={fg} opacity={0.08} />
@@ -66,6 +85,16 @@ export function PhotoBlock({
       )}
     </View>
   );
+}
+
+type PatternKind = 'dots' | 'stripes' | 'grid' | 'waves';
+
+/** One print texture per kind of place, so neighboring cards never look identical. */
+function patternFor(icon: IconName): PatternKind {
+  if (['trail', 'sunset', 'heart', 'court', 'sports', 'fitness'].includes(icon)) return 'waves';
+  if (['music', 'record', 'arts', 'film', 'moon', 'ticket'].includes(icon)) return 'stripes';
+  if (['arch', 'book', 'museum', 'dice', 'users', 'tag'].includes(icon)) return 'grid';
+  return 'dots';
 }
 
 export function Tape({ rotate = -4, style }: { rotate?: number; style?: ViewStyle }) {
@@ -93,7 +122,7 @@ export function Tape({ rotate = -4, style }: { rotate?: number; style?: ViewStyl
 
 type Props = { place: Place; acc: AccessResult; km?: number; width?: number; now?: Date; compact?: boolean };
 
-function PlaceCardImpl({ place: p, acc, width, now = new Date(), compact }: Props) {
+function PlaceCardImpl({ place: p, acc, width, now = clockNow(), compact }: Props) {
   const { c } = useTheme();
   const { savedPlaces, toggleSavedPlace, checkins } = useApp();
   const saved = savedPlaces.includes(p.id);
@@ -110,7 +139,7 @@ function PlaceCardImpl({ place: p, acc, width, now = new Date(), compact }: Prop
     >
       <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.lineStrong, opacity: locked ? 0.55 : 1 }]}>
         <Tape rotate={(seed % 2 ? -1 : 1) * 4} />
-        <PhotoBlock accent={locked ? 'ink' : p.accent} icon={placeIcon(p)} height={compact ? 84 : 112} seed={seed} label={`${p.photoCount} photos`} />
+        <PhotoBlock accent={locked ? 'ink' : p.accent} icon={placeIcon(p)} height={compact ? 84 : 112} seed={seed} />
         <View style={{ padding: 12, gap: 4 }}>
           <View style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-start' }}>
             <View style={{ flex: 1 }}>
@@ -128,7 +157,7 @@ function PlaceCardImpl({ place: p, acc, width, now = new Date(), compact }: Prop
             </View>
             {!locked && (
               <Pressable
-                hitSlop={10}
+                hitSlop={14}
                 accessibilityRole="button"
                 accessibilityLabel={saved ? `Unsave ${p.name}` : `Save ${p.name}`}
                 onPress={() => {

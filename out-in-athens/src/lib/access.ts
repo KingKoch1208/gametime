@@ -16,6 +16,10 @@ export type AccessResult = {
   visible: boolean;
   /** Can this person actually go? (false → greyed out, lock stamp, no CTAs) */
   canAttend: boolean;
+  /** Locals/visitors can go only with a UGA student. Shown, never recommended. */
+  needsStudent?: boolean;
+  /** 18+/21+ and the person hasn't told us their age. Shown, never recommended. */
+  ageUnknown?: boolean;
   /** Why it's locked, for the lock stamp and the detail banner. */
   lockReason?: string;
   /** Primary stamp for cards. */
@@ -23,6 +27,11 @@ export type AccessResult = {
   /** Show the "Dawg perk" badge. */
   perk: boolean;
 };
+
+/** Safe to push at someone (I'm bored, "Open to me", guides, Now rows)? */
+export function recommendable(a: AccessResult): boolean {
+  return a.visible && a.canAttend && !a.needsStudent && !a.ageUnknown;
+}
 
 export type StampKind = 'free' | 'open' | 'uga' | 'guest' | '18' | '21' | 'ticket' | 'perk' | 'lock' | 'featured' | 'pending' | 'verified' | 'live' | 'new';
 
@@ -40,29 +49,48 @@ function ageOk(access: Access, age: AgeRange): boolean | 'unknown' {
   return true;
 }
 
-export function accessFor(item: { access: Access; dawgPerk?: string; price?: number; cost?: number }, v: Viewer): AccessResult {
+type Accessible = {
+  access: Access;
+  dawgPerk?: string;
+  price?: number;
+  cost?: number;
+  /** 'students' = only relevant to UGA students (club fair, career mixer). */
+  audience?: 'students' | 'everyone';
+  /** Recurring commitment (weekly class, volunteer shift): not useful to visitors. */
+  recurring?: boolean;
+};
+
+const HIDDEN: AccessResult = { visible: false, canAttend: false, stamp: 'lock', perk: false };
+
+export function accessFor(item: Accessible, v: Viewer): AccessResult {
   const isStudent = v.mode === 'student';
   const perk = isStudent && !!item.dawgPerk;
   const price = item.price ?? item.cost ?? 0;
+
+  // Student-only relevance: hidden for everyone else, even with "Show UGA-only stuff" on.
+  if (!isStudent && item.audience === 'students') return HIDDEN;
+  // Visitors are in town briefly: skip recurring commitments.
+  if (v.mode === 'visitor' && item.recurring) return HIDDEN;
 
   // Age gates apply to everyone.
   const age = ageOk(item.access, v.age);
   if (age === false) {
     // Known to be too young: hide entirely. Nothing to see here.
-    return { visible: false, canAttend: false, lockReason: `${item.access} only`, stamp: 'lock', perk: false };
+    return { ...HIDDEN, lockReason: `${item.access} only` };
   }
 
   switch (item.access) {
     case 'uga_id':
       if (isStudent) return { visible: true, canAttend: true, stamp: 'uga', perk: true };
       if (v.showUgaOnly) return { visible: true, canAttend: false, lockReason: 'UGA ID required', stamp: 'lock', perk: false };
-      return { visible: false, canAttend: false, lockReason: 'UGA ID required', stamp: 'lock', perk: false };
+      return { ...HIDDEN, lockReason: 'UGA ID required' };
     case 'uga_guest_ok':
-      return { visible: true, canAttend: true, stamp: isStudent ? (price === 0 ? 'free' : 'uga') : 'guest', perk };
+      if (isStudent) return { visible: true, canAttend: true, stamp: price === 0 ? 'free' : 'uga', perk };
+      return { visible: true, canAttend: true, needsStudent: true, lockReason: 'Needs a UGA student with you', stamp: 'guest', perk: false };
     case '21+':
-      return { visible: true, canAttend: true, stamp: '21', perk };
+      return { visible: true, canAttend: true, ageUnknown: age === 'unknown', stamp: '21', perk };
     case '18+':
-      return { visible: true, canAttend: true, stamp: '18', perk };
+      return { visible: true, canAttend: true, ageUnknown: age === 'unknown', stamp: '18', perk };
     case 'ticketed':
       return { visible: true, canAttend: true, stamp: 'ticket', perk };
     case 'open':
@@ -75,7 +103,7 @@ export const STAMP_TEXT: Record<StampKind, string> = {
   free: 'Free',
   open: 'Open to all',
   uga: 'UGA ID',
-  guest: 'w/ student guest',
+  guest: 'Bring a student',
   '18': '18+',
   '21': '21+',
   ticket: 'Ticketed',

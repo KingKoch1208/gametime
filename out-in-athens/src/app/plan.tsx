@@ -12,7 +12,7 @@ import { Stamp } from '@/components/Stamp';
 import { Button, Paper, Sheet, Txt } from '@/components/ui';
 import { haptic, sound } from '@/lib/feedback';
 import { addDays, DAY_SHORT, fmtTime, relativeDay, startOfDay } from '@/lib/time';
-import { getEvent, getFriend, getFriends, getPlace } from '@/services/dataService';
+import { getEvent, getFriend, getFriends, getPlace, now as clockNow } from '@/services/dataService';
 import { type Plan, useApp } from '@/state/AppState';
 import { useTheme } from '@/theme/ThemeProvider';
 import { palette } from '@/theme/tokens';
@@ -35,7 +35,7 @@ export default function PlanScreen() {
 }
 
 function suggestTimes(refType: 'event' | 'place', refId: string): string[] {
-  const now = new Date();
+  const now = clockNow();
   if (refType === 'event') {
     const e = getEvent(refId);
     if (e) {
@@ -202,7 +202,7 @@ function PlanCard({ plan }: { plan: Plan }) {
             {plan.title}
           </Txt>
           <Txt v="bodySm" muted>
-            {e ? `${relativeDay(e.start, new Date())} · ${fmtTime(e.start)} · ${e.venue}` : p ? p.neighborhood : ''}
+            {e ? `${relativeDay(e.start, clockNow())} · ${fmtTime(e.start)} · ${e.venue}` : p ? p.neighborhood : ''}
           </Txt>
 
           <Txt v="label" style={{ marginTop: 18, marginBottom: 8 }}>

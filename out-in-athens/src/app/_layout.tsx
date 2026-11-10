@@ -14,8 +14,9 @@ import { useEffect } from 'react';
 import { LogBox, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { PitchSwitch } from '@/components/misc';
+import { PitchSwitch, ToastHost } from '@/components/misc';
 import { setSoundsEnabled } from '@/lib/feedback';
+import { setDemoTime } from '@/services/dataService';
 import { AppStateProvider, useApp } from '@/state/AppState';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 
@@ -50,6 +51,8 @@ export default function RootLayout() {
 function Root({ fontsLoaded }: { fontsLoaded: boolean }) {
   const { ready, profile, prefs } = useApp();
   const { c, dark } = useTheme();
+  // Apply the Pitch Mode demo clock before any screen reads the schedule (idempotent).
+  setDemoTime(prefs.demoTime);
 
   useEffect(() => {
     if (ready && fontsLoaded) SplashScreen.hideAsync().catch(() => {});
@@ -62,7 +65,8 @@ function Root({ fontsLoaded }: { fontsLoaded: boolean }) {
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
       <StatusBar style={dark ? 'light' : 'dark'} />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }}>
+      {/* Remount when the demo clock changes so every list re-reads the schedule. */}
+      <Stack key={prefs.demoTime ?? 'live'} screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }}>
         <Stack.Protected guard={profile.onboarded}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="event/[id]" />
@@ -81,6 +85,7 @@ function Root({ fontsLoaded }: { fontsLoaded: boolean }) {
         </Stack.Protected>
       </Stack>
       <PitchSwitch />
+      <ToastHost />
     </View>
   );
 }

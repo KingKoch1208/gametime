@@ -10,13 +10,12 @@ import { TabHeader } from '@/components/Header';
 import { Icon } from '@/components/Icon';
 import { EmptyState, FreshStamp, useStampRefresh } from '@/components/misc';
 import { PlaceCard } from '@/components/PlaceCard';
-import { Stamp } from '@/components/Stamp';
 import { TicketCard } from '@/components/TicketCard';
 import { Chip, Paper, SectionHeader, Sheet, Txt } from '@/components/ui';
 import { useNow, useWeather } from '@/lib/hooks';
 import { NEAR_RADIUS_KM } from '@/lib/geo';
-import { DAY_LONG, partOfDay, type TimeWindow } from '@/lib/time';
-import { getBoredDeck, getEvent, getEvents, getFeatured, getGuides, getPlace, getPlaces } from '@/services/dataService';
+import { DAY_LONG, partOfDay, relativeDay, type TimeWindow } from '@/lib/time';
+import { getBoredDeck, getEvent, getEvents, getFeatured, getGuides, getOrg, getPlace, getPlaces } from '@/services/dataService';
 import { useApp } from '@/state/AppState';
 import { useTheme } from '@/theme/ThemeProvider';
 import { palette } from '@/theme/tokens';
@@ -40,7 +39,7 @@ const CARD_W = 318;
 
 export default function NowScreen() {
   const { c } = useTheme();
-  const { viewer, profile, plans } = useApp();
+  const { viewer, profile, plans, prefs, setPrefs } = useApp();
   const [win, setWin] = useState<TimeWindow>('tonight');
   const [tick, setTick] = useState(0);
   const { control, stampKey } = useStampRefresh(() => setTick((t) => t + 1));
@@ -52,29 +51,44 @@ export default function NowScreen() {
   const data = useMemo(() => {
     const indoorFirst = <T extends { item: { indoor: boolean } }>(xs: T[]) =>
       rainy ? [...xs].sort((a, b) => Number(b.item.indoor) - Number(a.item.indoor)) : xs;
-
-    const happening = indoorFirst(getEvents({ viewer, window: win }).filter((l) => !l.item.isAway)).slice(0, 10);
-    const free = indoorFirst(getEvents({ viewer, window: 'week', freeOnly: true, openToMe: true })).slice(0, 10);
-    const sober = getEvents({ viewer, window: 'week', soberFriendly: true, openToMe: true })
-      .filter((l) => l.item.start.getHours() >= 18 || l.live)
-      .slice(0, 4);
-    const lateFood = getPlaces({ viewer, kind: 'food', foodTags: ['late'], openToMe: true }).slice(0, 3);
-    const friends = getEvents({ viewer, window: 'twoWeeks', openToMe: true })
-      .filter((l) => l.item.friendsGoing.length > 0)
-      .slice(0, 6);
-    const fresh = getEvents({ viewer, window: 'twoWeeks' })
-      .filter((l) => l.item.isNew)
-      .slice(0, 8);
+    // Each event shows up once on Now, in the highest-priority section that wants it.
+    const seen = new Set<string>();
+    const take = <T extends { item: { id: string } }>(xs: T[], n: number) => {
+      const out = xs.filter((x) => !seen.has(x.item.id)).slice(0, n);
+      out.forEach((x) => seen.add(x.item.id));
+      return out;
+    };
     const featured = getFeatured(viewer);
+    if (featured) seen.add(featured.item.id);
+    const happening = take(indoorFirst(getEvents({ viewer, window: win, openToMe: true }).filter((l) => !l.item.isAway)), 8);
+    const friends = take(
+      getEvents({ viewer, window: 'twoWeeks', openToMe: true }).filter((l) => l.item.friendsGoing.length > 0),
+      4,
+    );
+    const free = take(indoorFirst(getEvents({ viewer, window: 'week', freeOnly: true, openToMe: true })), 8);
+    const sober = take(
+      getEvents({ viewer, window: 'week', soberFriendly: true, openToMe: true }).filter((l) => l.item.start.getHours() >= 17 || l.live),
+      3,
+    );
+    const fresh = take(
+      getEvents({ viewer, window: 'twoWeeks', openToMe: true }).filter((l) => l.item.isNew),
+      8,
+    );
+    const lateFood = getPlaces({ viewer, kind: 'food', foodTags: ['late'], openToMe: true, openNow: true }).slice(0, 3);
+    const gameDay = getEvents({ viewer, window: 'weekend', categories: ['sports'], includeAway: true }).find(
+      (l) => l.item.opponent && (l.item.isAway || l.item.access === 'ticketed') && l.item.id.startsWith('fb-'),
+    );
     const openNear = getBoredDeck(viewer, profile.transport, profile.interests, weather).length;
     const nearCount =
       getEvents({ viewer, window: 'now', openToMe: true }).filter((l) => l.km <= NEAR_RADIUS_KM[profile.transport]).length +
       getPlaces({ viewer, openNow: true, openToMe: true }).filter((l) => l.km <= NEAR_RADIUS_KM[profile.transport]).length;
-    return { happening, free, sober, lateFood, friends, fresh, featured, openNear, nearCount };
+    return { happening, free, sober, lateFood, friends, fresh, featured, openNear, nearCount, gameDay };
     // tick forces recompute after pull-to-refresh
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewer, win, rainy, profile.transport, profile.interests, tick, minuteKey]);
 
+  const featuredOrg = data.featured?.item.orgId ? getOrg(data.featured.item.orgId) : undefined;
+  const isVisitor = profile.mode === 'visitor';
   const firstName = profile.name.split(' ')[0];
   const lateNight = now.getHours() >= 21 || now.getHours() < 4;
 
@@ -90,7 +104,11 @@ export default function NowScreen() {
                 {firstName ? `,\n${firstName}.` : '.'}
               </Txt>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
-                <Icon name={rainy ? 'rain' : weather.condition === 'cloudy' ? 'cloud' : now.getHours() >= 19 ? 'moon' : 'sun'} color={c.textMuted} size={17} />
+                <Icon
+                  name={rainy ? 'rain' : weather.condition === 'cloudy' ? 'cloud' : now.getHours() >= 18 || now.getHours() < 6 ? 'moon' : 'sun'}
+                  color={c.textMuted}
+                  size={17}
+                />
                 <Txt v="bodySm" muted>
                   {DAY_LONG[now.getDay()]} {partOfDay(now)} · {weather.tempF}° {weather.label} ·{' '}
                   <Txt v="bodySm" color={c.brick} style={{ fontWeight: '700' }}>
@@ -126,6 +144,40 @@ export default function NowScreen() {
           </View>
         )}
 
+        {!prefs.pitchHintSeen && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Dismiss tip: long-press the logo for Pitch Mode"
+            onPress={() => setPrefs({ pitchHintSeen: true })}
+            style={{ marginHorizontal: 20, marginTop: 14, flexDirection: 'row', gap: 10, alignItems: 'center', backgroundColor: c.surfaceAlt, padding: 10 }}
+          >
+            <Icon name="megaphone" color={c.brick} size={18} />
+            <Txt v="caption" style={{ flex: 1 }}>
+              Demoing? Long-press the logo for Pitch Mode.
+            </Txt>
+            <Icon name="close" color={c.textMuted} size={16} />
+          </Pressable>
+        )}
+
+        {data.gameDay && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Game day: ${data.gameDay.item.title}`}
+            onPress={() => router.push(`/event/${data.gameDay!.item.id}`)}
+            style={{ marginHorizontal: 20, marginTop: 14, flexDirection: 'row', gap: 10, alignItems: 'center', backgroundColor: palette.brick, padding: 12 }}
+          >
+            <Icon name="sports" color={palette.paper} size={22} />
+            <View style={{ flex: 1 }}>
+              <Txt v="label" color={palette.mustard}>
+                Game day · {relativeDay(data.gameDay.item.start, now)}
+              </Txt>
+              <Txt v="bodySm" color={palette.paper}>
+                {data.gameDay.item.title}. {data.gameDay.item.isAway ? 'Watch parties open to everyone →' : 'No ticket? Find a watch spot →'}
+              </Txt>
+            </View>
+          </Pressable>
+        )}
+
         <BoredButton count={Math.max(data.openNear, 1)} />
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 20, paddingTop: 22 }}>
@@ -154,15 +206,12 @@ export default function NowScreen() {
           />
         )}
 
-        {data.featured && (
+        {data.featured && featuredOrg && (
           <View style={{ paddingHorizontal: 20, marginTop: 18 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <Stamp kind="featured" animate={false} />
-              <Txt v="caption" muted style={{ flex: 1 }}>
-                Paid placement by {data.featured.item.source.name}. Always labeled.
-              </Txt>
-            </View>
-            <TicketCard event={data.featured.item} acc={data.featured.acc} km={data.featured.km} live={data.featured.live} now={now} />
+            <Txt v="caption" muted style={{ marginBottom: 8 }}>
+              Featured · paid by {featuredOrg.name}. Always labeled, never in I’m bored.
+            </Txt>
+            <TicketCard event={data.featured.item} acc={data.featured.acc} km={data.featured.km} live={data.featured.live} now={now} featuredSlot />
           </View>
         )}
 
@@ -198,35 +247,6 @@ export default function NowScreen() {
           </>
         )}
 
-        <SectionHeader title="Free this week" kicker="$0.00" action="See all" onAction={() => router.push({ pathname: '/events', params: { free: '1' } })} />
-        <FlatList
-          horizontal
-          data={data.free}
-          keyExtractor={(l) => l.item.id}
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 20, gap: 14, paddingVertical: 10 }}
-          renderItem={({ item: l }) => <TicketCard event={l.item} acc={l.acc} km={l.km} live={l.live} width={CARD_W} now={now} showFriends={false} />}
-        />
-
-        <SectionHeader title="Not a bar crowd" kicker="Nights out, no hangover" />
-        <View style={{ paddingHorizontal: 20, gap: 12 }}>
-          <Txt v="bodySm" muted style={{ marginTop: -4, marginBottom: 2 }}>
-            Sober-friendly plans after dark: shows, games, late eats and things with no bar line.
-          </Txt>
-          {data.sober.map((l) => (
-            <TicketCard key={l.item.id} event={l.item} acc={l.acc} km={l.km} live={l.live} now={now} showFriends={false} />
-          ))}
-        </View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 14, paddingTop: 22, paddingBottom: 4, paddingHorizontal: 20 }}
-        >
-          {data.lateFood.map((l) => (
-            <PlaceCard key={l.item.id} place={l.item} acc={l.acc} km={l.km} width={230} now={now} compact />
-          ))}
-        </ScrollView>
-
         {data.friends.length > 0 && (
           <>
             <SectionHeader title="Your friends are going" action="Friends" onAction={() => router.push('/profile')} />
@@ -254,6 +274,42 @@ export default function NowScreen() {
           </>
         )}
 
+        <SectionHeader title="Free this week" kicker="$0.00" action="See all" onAction={() => router.push({ pathname: '/events', params: { free: '1' } })} />
+        <FlatList
+          horizontal
+          data={data.free}
+          keyExtractor={(l) => l.item.id}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 20, gap: 14, paddingVertical: 10 }}
+          renderItem={({ item: l }) => <TicketCard event={l.item} acc={l.acc} km={l.km} live={l.live} width={CARD_W} now={now} showFriends={false} />}
+        />
+
+        <SectionHeader title="Not a bar crowd" kicker="Nights out, no hangover" />
+        <View style={{ paddingHorizontal: 20, gap: 12 }}>
+          <Txt v="bodySm" muted style={{ marginTop: -4, marginBottom: 2 }}>
+            Sober-friendly plans after dark: shows, games, late eats and things with no bar line.
+          </Txt>
+          {data.sober.map((l) => (
+            <TicketCard key={l.item.id} event={l.item} acc={l.acc} km={l.km} live={l.live} now={now} showFriends={false} />
+          ))}
+          <Pressable accessibilityRole="link" hitSlop={{ top: 14, bottom: 14 }} onPress={() => router.push({ pathname: '/events', params: { sober: '1' } })}>
+            <Txt v="labelSm" color={c.brick}>
+              All sober-friendly plans this week →
+            </Txt>
+          </Pressable>
+        </View>
+        {lateNight && data.lateFood.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 14, paddingTop: 22, paddingBottom: 4, paddingHorizontal: 20 }}
+          >
+            {data.lateFood.map((l) => (
+              <PlaceCard key={l.item.id} place={l.item} acc={l.acc} km={l.km} width={230} now={now} compact />
+            ))}
+          </ScrollView>
+        )}
+
         {data.fresh.length > 0 && (
           <>
             <SectionHeader title="New this week" kicker="Just stapled up" />
@@ -270,12 +326,24 @@ export default function NowScreen() {
 
         <SectionHeader title="Curated collections" kicker="Zines by locals" action="Explore" onAction={() => router.push('/explore')} />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}>
-          {getGuides().map((g) => (
+          {getGuides(viewer.mode).map((g) => (
             <GuideCover key={g.id} guide={g} />
           ))}
         </ScrollView>
 
-        <GetHomeSafe highlight={lateNight} />
+        {isVisitor && (
+          <View style={{ marginHorizontal: 20, marginTop: 28, flexDirection: 'row', gap: 12, borderWidth: 1.5, borderColor: c.lineStrong, padding: 14 }}>
+            <Icon name="car" color={c.text} size={22} />
+            <View style={{ flex: 1 }}>
+              <Txt v="bodyBold">Parking downtown</Txt>
+              <Txt v="bodySm" muted>
+                City decks on Washington St and College Ave are closest to everything (sample info). Everything downtown is a short walk from there.
+              </Txt>
+            </View>
+          </View>
+        )}
+
+        <GetHomeSafe highlight={lateNight} mode={profile.mode} />
 
         <View style={{ paddingHorizontal: 20, marginTop: 24, flexDirection: 'row', gap: 10 }}>
           <Pressable
@@ -307,7 +375,7 @@ function greeting(d: Date): string {
   return 'Night owl';
 }
 
-function GetHomeSafe({ highlight }: { highlight: boolean }) {
+function GetHomeSafe({ highlight, mode }: { highlight: boolean; mode: 'student' | 'local' | 'visitor' }) {
   const { c } = useTheme();
   return (
     <View style={{ marginHorizontal: 20, marginTop: 28 }}>
@@ -326,11 +394,18 @@ function GetHomeSafe({ highlight }: { highlight: boolean }) {
           </Txt>
         </View>
         <View style={{ gap: 8, marginTop: 10 }}>
-          {[
-            ['bus', 'Night bus & campus transit', 'Live arrivals coming soon (placeholder).'],
-            ['car', 'Safe ride', 'Campus safe-ride hours & the number to call (placeholder).'],
-            ['users', 'Buddy check', 'Share your ETA with a friend from Plans.'],
-          ].map(([icon, title, body]) => (
+          {(mode === 'student'
+            ? [
+                ['bus', 'Night bus & campus transit', 'Live arrivals coming soon (placeholder).'],
+                ['car', 'Campus safe-ride', 'Hours and the number to call (placeholder).'],
+                ['users', 'Buddy check', 'Share your ETA with a friend from Plans.'],
+              ]
+            : [
+                ['bus', 'Athens-Clarke Transit routes', 'Late routes and times (placeholder).'],
+                ['car', 'Rideshare pickup spots downtown', 'Where drivers can actually stop (placeholder).'],
+                ['users', 'Buddy check', 'Share your ETA with a friend from Plans.'],
+              ]
+          ).map(([icon, title, body]) => (
             <View key={title} style={{ flexDirection: 'row', gap: 10 }}>
               <Icon name={icon as 'bus'} color={highlight ? palette.paper : c.text} size={18} />
               <View style={{ flex: 1 }}>

@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ReviewTag } from '@/data/types';
 import { haptic, sound } from '@/lib/feedback';
 import { refresh } from '@/services/dataService';
+import { onToast } from '@/lib/toast';
 import { useApp } from '@/state/AppState';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, palette } from '@/theme/tokens';
@@ -132,20 +133,23 @@ export function FreshStamp({ stampKey }: { stampKey: number }) {
 
 export function PitchSwitch() {
   const { prefs, profile, setProfile, setPrefs } = useApp();
-  const insets = useSafeAreaInsets();
   if (!prefs.pitchMode) return null;
+  // A slim tab on the left edge, mid-screen: never on top of a screen title.
   return (
-    <View pointerEvents="box-none" style={{ position: 'absolute', top: insets.top + 2, left: 0, right: 0, alignItems: 'center', zIndex: 100 }}>
+    <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, top: '44%', zIndex: 100 }}>
       <View
         style={{
-          flexDirection: 'row',
-          alignItems: 'center',
           backgroundColor: palette.ink,
-          borderRadius: 4,
-          padding: 2,
+          borderTopRightRadius: 6,
+          borderBottomRightRadius: 6,
+          paddingVertical: 4,
+          paddingRight: 3,
+          paddingLeft: 2,
           borderWidth: 1.5,
+          borderLeftWidth: 0,
           borderColor: palette.mustard,
-          gap: 2,
+          gap: 3,
+          alignItems: 'center',
         }}
       >
         {(['student', 'local'] as const).map((m) => {
@@ -156,14 +160,15 @@ export function PitchSwitch() {
               accessibilityRole="button"
               accessibilityLabel={`Pitch mode: switch to ${m} view`}
               accessibilityState={{ selected: on }}
+              hitSlop={{ right: 8 }}
               onPress={() => {
                 haptic.stamp();
                 setProfile({ mode: m });
               }}
-              style={{ paddingHorizontal: 8, paddingVertical: 4, backgroundColor: on ? palette.mustard : 'transparent', borderRadius: 2 }}
+              style={{ width: 36, paddingVertical: 7, alignItems: 'center', backgroundColor: on ? palette.mustard : 'transparent', borderRadius: 3 }}
             >
-              <Txt style={{ fontFamily: fonts.label, fontSize: 10, letterSpacing: 1.1, color: on ? palette.ink : palette.paper }} maxFontSizeMultiplier={1}>
-                {m === 'student' ? 'STUDENT' : 'LOCAL'}
+              <Txt style={{ fontFamily: fonts.label, fontSize: 10, letterSpacing: 0.8, color: on ? palette.ink : palette.paper }} maxFontSizeMultiplier={1}>
+                {m === 'student' ? 'STU' : 'LOC'}
               </Txt>
             </Pressable>
           );
@@ -171,16 +176,60 @@ export function PitchSwitch() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Pitch mode: toggle demo weather"
-          hitSlop={6}
+          hitSlop={{ right: 8 }}
           onPress={() => {
             haptic.tap();
             setPrefs({ demoWeather: prefs.demoWeather === 'rain' ? 'auto' : 'rain' });
           }}
-          style={{ paddingHorizontal: 6, paddingVertical: 2, borderLeftWidth: 1, borderColor: '#5B5447' }}
+          style={{ width: 36, paddingVertical: 6, alignItems: 'center', borderTopWidth: 1, borderColor: '#5B5447' }}
         >
           <Icon name={prefs.demoWeather === 'rain' ? 'rain' : 'sun'} color={palette.mustard} size={16} />
         </Pressable>
       </View>
     </View>
+  );
+}
+
+// ——— Toast host (rendered once at the root) ———
+
+export function ToastHost() {
+  const insets = useSafeAreaInsets();
+  const [msg, setMsg] = useState<string | null>(null);
+  const v = useState(() => new Animated.Value(0))[0];
+  useEffect(
+    () =>
+      onToast((m) => {
+        setMsg(m);
+        v.setValue(0);
+        Animated.sequence([
+          Animated.spring(v, { toValue: 1, useNativeDriver: true, speed: 18, bounciness: 8 }),
+          Animated.delay(2600),
+          Animated.timing(v, { toValue: 0, duration: 220, useNativeDriver: true }),
+        ]).start(({ finished }) => finished && setMsg(null));
+      }),
+    [v],
+  );
+  if (!msg) return null;
+  return (
+    <Animated.View
+      pointerEvents="none"
+      accessibilityLiveRegion="polite"
+      style={{
+        position: 'absolute',
+        left: 16,
+        right: 16,
+        bottom: insets.bottom + 96,
+        zIndex: 200,
+        alignItems: 'center',
+        opacity: v,
+        transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }],
+      }}
+    >
+      <View style={{ backgroundColor: palette.ink, borderWidth: 1.5, borderColor: palette.mustard, paddingHorizontal: 14, paddingVertical: 10, maxWidth: 420 }}>
+        <Txt v="bodySm" color={palette.paper} center>
+          {msg}
+        </Txt>
+      </View>
+    </Animated.View>
   );
 }

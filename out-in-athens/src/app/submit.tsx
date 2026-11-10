@@ -22,6 +22,7 @@ import { addDays, DAY_SHORT, fmtHour, startOfDay } from '@/lib/time';
 import { useApp } from '@/state/AppState';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts } from '@/theme/tokens';
+import { now as clockNow } from '@/services/dataService';
 
 const CATS: EventCategory[] = ['concerts', 'sports', 'shows', 'campus', 'community', 'outdoors', 'arts', 'volunteer'];
 const ACCESS: Access[] = ['open', 'uga_id', 'uga_guest_ok', '18+', '21+', 'ticketed'];
@@ -40,7 +41,7 @@ export default function SubmitScreen() {
   const [access, setAccess] = useState<Access>(profile.mode === 'student' ? 'open' : 'open');
   const [photo, setPhoto] = useState<string | undefined>();
   const [done, setDone] = useState(false);
-  const now = new Date();
+  const now = clockNow();
 
   const pickPhoto = async () => {
     try {

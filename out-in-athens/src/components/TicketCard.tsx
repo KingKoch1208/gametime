@@ -16,6 +16,7 @@ import { FriendStack } from './Avatars';
 import { CATEGORY_ICON, Icon } from './Icon';
 import { Stamp } from './Stamp';
 import { Txt } from './ui';
+import { now as clockNow } from '@/services/dataService';
 
 type Props = {
   event: AthensEvent;
@@ -25,13 +26,16 @@ type Props = {
   width?: number;
   now?: Date;
   showFriends?: boolean;
+  /** Rendered in the labeled Featured slot (the only place the FEATURED stamp shows). */
+  featuredSlot?: boolean;
 };
 
 const DATE_W = 76;
 
-function TicketCardImpl({ event: e, acc, km, live, width, now = new Date(), showFriends = true }: Props) {
+function TicketCardImpl({ event: e, acc, km, live, width, now = clockNow(), showFriends = true, featuredSlot = false }: Props) {
   const { c } = useTheme();
-  const { savedEvents, toggleSavedEvent } = useApp();
+  const { savedEvents, toggleSavedEvent, profile } = useApp();
+  const isStudent = profile.mode === 'student';
   const saved = savedEvents.includes(e.id);
   const locked = !acc.canAttend;
   const fill = locked ? c.locked : accentFill(c, e.accent);
@@ -112,7 +116,7 @@ function TicketCardImpl({ event: e, acc, km, live, width, now = new Date(), show
             </View>
             {!locked && (
               <Pressable
-                hitSlop={10}
+                hitSlop={14}
                 accessibilityRole="button"
                 accessibilityLabel={saved ? `Unsave ${e.title}` : `Save ${e.title}`}
                 onPress={() => {
@@ -129,9 +133,9 @@ function TicketCardImpl({ event: e, acc, km, live, width, now = new Date(), show
           <View style={styles.stamps}>
             <Stamp kind={acc.stamp} text={acc.stamp === 'lock' ? acc.lockReason : undefined} />
             {acc.perk && <Stamp kind="perk" />}
-            {e.featured && <Stamp kind="featured" />}
-            {e.isNew && !e.featured && <Stamp kind="new" />}
-            {e.source.kind === 'student' && e.source.verified && <Stamp kind="verified" text="Student pick" />}
+            {featuredSlot && <Stamp kind="featured" />}
+            {e.isNew && !featuredSlot && <Stamp kind="new" />}
+            {isStudent && e.source.kind === 'student' && e.source.verified && <Stamp kind="verified" text="Student pick" />}
           </View>
 
           {showFriends && e.friendsGoing.length > 0 && !locked && (

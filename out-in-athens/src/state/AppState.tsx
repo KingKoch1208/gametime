@@ -19,7 +19,11 @@ export type Profile = {
 
 export type Prefs = {
   showUgaOnly: boolean;
-  ghostMode: boolean;
+  ghostMode: boolean; // legacy; location sharing below replaces it
+  locationSharing: 'off' | 'neighborhood' | 'exact';
+  sharingAsked: boolean;
+  pitchHintSeen: boolean;
+  demoTime: string | null; // Pitch Mode demo clock (ISO), null = live
   theme: 'system' | 'paper' | 'afterDark';
   textScale: 1 | 1.15 | 1.3;
   reduceMotion: boolean;
@@ -74,7 +78,11 @@ const DEFAULT: Persisted = {
   profile: { name: '', mode: 'student', interests: [], transport: 'walk', age: null, onboarded: false },
   prefs: {
     showUgaOnly: false,
-    ghostMode: false,
+    ghostMode: true,
+    locationSharing: 'off',
+    sharingAsked: false,
+    pitchHintSeen: false,
+    demoTime: null,
     theme: 'system',
     textScale: 1,
     reduceMotion: false,

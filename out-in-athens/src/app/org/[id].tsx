@@ -11,7 +11,7 @@ import { TicketCard } from '@/components/TicketCard';
 import { Button, Paper, Txt } from '@/components/ui';
 import { accessFor } from '@/lib/access';
 import { haptic } from '@/lib/feedback';
-import { getEventsByOrg, getOrg } from '@/services/dataService';
+import { getEventsByOrg, getOrg, now as clockNow } from '@/services/dataService';
 import { useApp } from '@/state/AppState';
 import { useTheme } from '@/theme/ThemeProvider';
 import { accentFill, fonts, onAccent } from '@/theme/tokens';
@@ -26,7 +26,7 @@ export default function OrgScreen() {
   const on = following.includes(o.id);
   const fill = accentFill(c, o.accent);
   const fg = onAccent(o.accent);
-  const now = new Date();
+  const now = clockNow();
   const events = getEventsByOrg(o.id)
     .map((e) => ({ e, acc: accessFor(e, viewer) }))
     .filter((x) => x.acc.visible);

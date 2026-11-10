@@ -46,7 +46,7 @@ export const paperTheme: ThemeColors = {
   mustard: palette.mustard,
   onFill: palette.paper,
   inkFill: palette.ink,
-  locked: '#8C8476',
+  locked: '#6B6457', // 5.0:1 on paper
   overlay: 'rgba(28,26,23,0.45)',
   mapStyle: 'light',
 };
@@ -68,7 +68,7 @@ export const afterDarkTheme: ThemeColors = {
   mustard: palette.mustard,
   onFill: palette.paper,
   inkFill: '#3D3831',
-  locked: '#7A7266',
+  locked: '#9A917F', // 5.0:1 on the dark surface
   overlay: 'rgba(0,0,0,0.6)',
   mapStyle: 'dark',
 };

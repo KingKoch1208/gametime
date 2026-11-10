@@ -23,7 +23,22 @@ function colorFor(c: ReturnType<typeof useTheme>['c'], k: PinColor) {
   }
 }
 
-function PinImpl({ icon, color, live, selected, locked }: { icon: IconName; color: PinColor; live?: boolean; selected?: boolean; locked?: boolean }) {
+function PinImpl({
+  icon,
+  color,
+  live,
+  selected,
+  locked,
+  label,
+}: {
+  icon: IconName;
+  color: PinColor;
+  live?: boolean;
+  selected?: boolean;
+  locked?: boolean;
+  /** Name shown under the pin when zoomed in. The view stays centered on the circle. */
+  label?: string;
+}) {
   const { c, reduceMotion } = useTheme();
   const { bg, fg } = colorFor(c, locked ? 'locked' : color);
   const enter = useState(() => new Animated.Value(0))[0];
@@ -42,7 +57,7 @@ function PinImpl({ icon, color, live, selected, locked }: { icon: IconName; colo
   }, [live, pulse, reduceMotion]);
 
   return (
-    <View style={{ width: 70, height: 70, alignItems: 'center', justifyContent: 'center' }}>
+    <View style={{ width: label ? 124 : 70, height: label ? 106 : 70, alignItems: 'center', justifyContent: 'center' }}>
       {live && (
         <Animated.View
           style={{
@@ -75,6 +90,25 @@ function PinImpl({ icon, color, live, selected, locked }: { icon: IconName; colo
       >
         <Icon name={locked ? 'lock' : icon} color={fg} size={size * 0.55} strokeWidth={2} />
       </Animated.View>
+      {label && (
+        <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, alignItems: 'center' }}>
+          <Txt
+            numberOfLines={1}
+            maxFontSizeMultiplier={1.1}
+            style={{
+              fontFamily: fonts.label,
+              fontSize: 10.5,
+              letterSpacing: 0.4,
+              color: palette.ink,
+              backgroundColor: 'rgba(243,236,221,0.92)',
+              paddingHorizontal: 4,
+              maxWidth: 124,
+            }}
+          >
+            {label.length > 18 ? `${label.slice(0, 17)}…` : label}
+          </Txt>
+        </View>
+      )}
     </View>
   );
 }
@@ -161,6 +195,34 @@ export function FriendBubble({ initials, color, ghost }: { initials: string; col
           marginTop: -1,
         }}
       />
+    </View>
+  );
+}
+
+/** "You": a pulsing ivy dot, so it never reads as a friend. */
+export function MeDot({ hidden }: { hidden?: boolean }) {
+  const { reduceMotion } = useTheme();
+  const pulse = useState(() => new Animated.Value(0))[0];
+  useEffect(() => {
+    if (reduceMotion) return;
+    const loop = Animated.loop(Animated.timing(pulse, { toValue: 1, duration: 1800, useNativeDriver: true }));
+    loop.start();
+    return () => loop.stop();
+  }, [pulse, reduceMotion]);
+  return (
+    <View style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+      <Animated.View
+        style={{
+          position: 'absolute',
+          width: 44,
+          height: 44,
+          borderRadius: 22,
+          backgroundColor: palette.ivy,
+          opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.35, 0] }),
+          transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] }) }],
+        }}
+      />
+      <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: hidden ? '#8C8476' : palette.ivy, borderWidth: 3, borderColor: palette.paper }} />
     </View>
   );
 }

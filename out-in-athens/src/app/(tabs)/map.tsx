@@ -8,7 +8,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ProfileButton } from '@/components/Header';
 import { CATEGORY_ICON, Icon, type IconName } from '@/components/Icon';
-import { ClusterPin, FriendBubble, Pin, type PinColor } from '@/components/MapPins';
+import { ClusterPin, FriendBubble, MeDot, Pin, type PinColor } from '@/components/MapPins';
+import { BottomSheet } from '@/components/BottomSheet';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { placeIcon } from '@/components/PlaceCard';
 import { Stamp } from '@/components/Stamp';
 import { TravelBadges } from '@/components/TravelBadges';
@@ -59,7 +61,7 @@ const INITIAL: Region = { ...ATHENS_CENTER, latitudeDelta: 0.06, longitudeDelta:
 export default function MapScreen() {
   const { c, dark } = useTheme();
   const insets = useSafeAreaInsets();
-  const { viewer, prefs, profile } = useApp();
+  const { viewer, prefs, setPrefs, profile } = useApp();
   const now = useNow();
   const mapRef = useRef<MapView>(null);
   const [filters, setFilters] = useState<FilterKey[]>([]);
@@ -162,6 +164,8 @@ export default function MapScreen() {
     return spots.filter((s) => s.w > 60).map((s, i) => ({ ...s, key: i, r: 160 + Math.min(320, s.w) }));
   }, [pins]);
 
+  const zoomedIn = region.latitudeDelta <= 0.028;
+
   // Simple grid clustering when zoomed out.
   const clusters = useMemo(() => {
     const zoomedOut = region.latitudeDelta > 0.028;
@@ -251,26 +255,39 @@ export default function MapScreen() {
               accessibilityLabel={`${cl.pin.title}${cl.pin.live ? ', happening now' : ''}`}
               zIndex={cl.pin.id === selected ? 10 : cl.pin.live ? 5 : 1}
             >
-              <Pin icon={cl.pin.icon} color={cl.pin.color} live={cl.pin.live} selected={cl.pin.id === selected} locked={cl.pin.locked} />
+              <Pin
+                icon={cl.pin.icon}
+                color={cl.pin.color}
+                live={cl.pin.live}
+                selected={cl.pin.id === selected}
+                locked={cl.pin.locked}
+                label={zoomedIn ? cl.pin.title : undefined}
+              />
             </Marker>
           ),
         )}
 
         {stop === 0 &&
           friends.map((f) => (
-            <Marker key={f.id} coordinate={f.coords} anchor={{ x: 0.5, y: 1 }} title={f.name} description={f.status} zIndex={20}>
+            <Marker key={f.id} coordinate={f.coords} anchor={{ x: 0.5, y: 1 }} title={f.name} description={`${f.status} · ${f.area}`} zIndex={20}>
               <FriendBubble initials={f.initials} color={f.color} />
             </Marker>
           ))}
 
         <Marker
           coordinate={MOCK_ME}
-          anchor={{ x: 0.5, y: 1 }}
-          title={prefs.ghostMode ? 'You (Ghost Mode)' : 'You'}
-          description={prefs.ghostMode ? 'Friends can’t see you right now.' : 'Friends who follow you can see this.'}
+          anchor={{ x: 0.5, y: 0.5 }}
+          title="You"
+          description={
+            prefs.locationSharing === 'off'
+              ? 'Not shared. Friends can’t see you.'
+              : prefs.locationSharing === 'neighborhood'
+                ? 'Friends see your neighborhood only.'
+                : 'Shared with friends in an active Plan.'
+          }
           zIndex={30}
         >
-          <FriendBubble initials={profile.name ? profile.name[0].toUpperCase() : 'ME'} color={palette.ink} ghost={prefs.ghostMode} />
+          <MeDot hidden={prefs.locationSharing === 'off'} />
         </Marker>
       </MapView>
 
@@ -297,13 +314,45 @@ export default function MapScreen() {
           </View>
           <ProfileButton />
         </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 14, paddingTop: 10 }}>
-          {FILTERS.map((f) => (
-            <View key={f.key} style={{ backgroundColor: filters.includes(f.key) ? 'transparent' : c.bg }}>
-              <Chip label={f.label} icon={f.icon} active={filters.includes(f.key)} onPress={() => toggleFilter(f.key)} accent="ink" />
-            </View>
-          ))}
-        </ScrollView>
+        <View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 8, paddingHorizontal: 14, paddingTop: 10, paddingRight: 40 }}
+          >
+            {FILTERS.map((f) => (
+              <View key={f.key} style={{ backgroundColor: filters.includes(f.key) ? 'transparent' : c.bg }}>
+                <Chip label={f.label} icon={f.icon} active={filters.includes(f.key)} onPress={() => toggleFilter(f.key)} accent="ink" />
+              </View>
+            ))}
+          </ScrollView>
+          {/* Scroll cue: the row continues past the edge */}
+          <Svg pointerEvents="none" width={36} height={46} style={{ position: 'absolute', right: 0, top: 6 }}>
+            <Defs>
+              <LinearGradient id="chipfade" x1="0" y1="0" x2="1" y2="0">
+                <Stop offset="0" stopColor={c.bg} stopOpacity={0} />
+                <Stop offset="1" stopColor={c.bg} stopOpacity={1} />
+              </LinearGradient>
+            </Defs>
+            <Rect x={0} y={0} width={36} height={46} fill="url(#chipfade)" />
+          </Svg>
+        </View>
+        <View
+          style={{
+            alignSelf: 'flex-start',
+            marginLeft: 14,
+            marginTop: 8,
+            backgroundColor: c.bg,
+            paddingHorizontal: 8,
+            paddingVertical: 3,
+            borderWidth: 1,
+            borderColor: c.line,
+          }}
+        >
+          <Txt v="caption" muted>
+            Numbers = groups · Initials = friends · Green dot = you
+          </Txt>
+        </View>
       </View>
 
       {/* Re-center */}
@@ -349,6 +398,36 @@ export default function MapScreen() {
           now={now}
         />
       )}
+      <BottomSheet visible={!prefs.sharingAsked} onClose={() => setPrefs({ sharingAsked: true })} title="Share where you are?" heightPct={0.56}>
+        <View style={{ paddingHorizontal: 20, gap: 12 }}>
+          <Txt v="bodySm" muted>
+            Friends who opted in show up on the map. You choose how much of you they see. It’s off until you say otherwise, and sharing turns itself off at 4am.
+          </Txt>
+          {(
+            [
+              ['off', 'Off', 'Nobody sees you. You can still see friends who share.'],
+              ['neighborhood', 'Neighborhood only', 'Friends see “Five Points” or “North Campus”, never a building.'],
+              ['exact', 'Exact, in Plans only', 'Your exact spot, only for friends in an active Plan.'],
+            ] as const
+          ).map(([v, title, body]) => (
+            <Pressable
+              key={v}
+              accessibilityRole="button"
+              accessibilityLabel={`${title}. ${body}`}
+              onPress={() => {
+                haptic.tap();
+                setPrefs({ locationSharing: v, sharingAsked: true, ghostMode: v === 'off' });
+              }}
+              style={{ borderWidth: 1.5, borderColor: c.lineStrong, padding: 12, backgroundColor: v === 'off' ? c.surface : 'transparent' }}
+            >
+              <Txt v="bodyBold">{title}</Txt>
+              <Txt v="caption" muted>
+                {body}
+              </Txt>
+            </Pressable>
+          ))}
+        </View>
+      </BottomSheet>
     </View>
   );
 }

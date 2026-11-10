@@ -2,7 +2,7 @@
 // near you, and allowed for your Access Mode. Right = save, left = skip.
 import { router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Dimensions, PanResponder, Pressable, StyleSheet, View } from 'react-native';
+import { Animated, Dimensions, PanResponder, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FriendStack } from '@/components/Avatars';
@@ -18,7 +18,8 @@ import { haptic, sound } from '@/lib/feedback';
 import { fmtDistance, MOCK_ME, NEAR_RADIUS_KM } from '@/lib/geo';
 import { useNow, useWeather } from '@/lib/hooks';
 import { openStatus, whenLabel } from '@/lib/time';
-import { type DeckCard, getBoredDeck } from '@/services/dataService';
+import { type DeckCard, getBoredDeck, getUpcoming } from '@/services/dataService';
+import { TicketCard } from '@/components/TicketCard';
 import { useApp } from '@/state/AppState';
 import { useTheme } from '@/theme/ThemeProvider';
 import { palette } from '@/theme/tokens';
@@ -53,6 +54,8 @@ export default function BoredScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const deck = useMemo(() => getBoredDeck(viewer, profile.transport, profile.interests, weather), [seed, viewer]);
   const [idx, setIdx] = useState(0);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const upcoming = useMemo(() => getUpcoming(viewer, 3), [viewer, seed]);
   const [savedCount, setSavedCount] = useState(0);
 
   const pos = useState(() => new Animated.ValueXY())[0];
@@ -152,7 +155,12 @@ export default function BoredScreen() {
         </Pressable>
       </View>
 
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 }}>
+      {current && deck.length < 3 && (
+        <Txt v="caption" muted center style={{ marginTop: 6, paddingHorizontal: 20 }}>
+          Quiet hour: only {deck.length} thing{deck.length === 1 ? '' : 's'} open near you. More opens soon.
+        </Txt>
+      )}
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
         {current ? (
           deck
             .slice(idx, idx + 3)
@@ -203,14 +211,22 @@ export default function BoredScreen() {
               );
             })
         ) : (
-          <View style={{ alignItems: 'center' }}>
+          <ScrollView
+            style={{ alignSelf: 'stretch' }}
+            contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 20, alignItems: 'center' }}
+          >
             <EmptyState
               icon="moon"
-              title={deck.length ? 'That’s the whole deck.' : 'Nothing open nearby right now.'}
-              body={`${savedCount ? `You saved ${savedCount}. ` : ''}Nothing else open this late? The Waffle House on Broad never closes, though.`}
+              title={deck.length ? 'That’s the whole deck.' : 'Quiet hour.'}
+              body={`${savedCount ? `You saved ${savedCount}. ` : ''}${deck.length ? '' : 'Not much is open near you right now. '}Here’s what opens next. (The Waffle House on Broad never closes, though.)`}
             />
+            <View style={{ alignSelf: 'stretch', gap: 12, marginBottom: 18 }}>
+              {upcoming.map((l) => (
+                <TicketCard key={l.item.id} event={l.item} acc={l.acc} km={l.km} now={now} showFriends={false} />
+              ))}
+            </View>
             <Button label="Shuffle again" icon="shuffle" onPress={reshuffle} />
-          </View>
+          </ScrollView>
         )}
       </View>
 
@@ -305,7 +321,7 @@ const styles = StyleSheet.create({
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16 },
   round: { width: 40, height: 40, borderRadius: 20, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
   bigRound: { width: 60, height: 60, borderRadius: 30, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
-  cardWrap: { position: 'absolute', width: '100%', maxWidth: 380, height: '92%', maxHeight: 560 },
+  cardWrap: { position: 'absolute', left: 20, right: 20, height: '92%', maxHeight: 560 },
   card: {
     flex: 1,
     borderWidth: 1.5,

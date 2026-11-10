@@ -91,6 +91,12 @@ export type AthensEvent = {
   watchPartyFor?: string;
   // submissions
   pending?: boolean;
+  /** 'students' = only relevant to UGA students; hidden for locals/visitors. */
+  audience?: 'students' | 'everyone';
+  /** Weekly class / shift: hidden for visitors. */
+  recurring?: boolean;
+  /** Allowed to start between 1am and 7am when its time is relative to the clock. */
+  lateNight?: boolean;
 };
 
 export type DayHours = [number, number] | null; // [open, close] in hours from midnight; close may be > 24
@@ -129,6 +135,8 @@ export type Place = {
   deals?: { day: number; text: string }[];
   spottedToday?: string; // food trucks
   season?: string;
+  audience?: 'students' | 'everyone';
+  recurring?: boolean;
 };
 
 export type Friend = {
@@ -138,6 +146,7 @@ export type Friend = {
   color: string;
   coords: LatLng;
   status: string;
+  area: string; // neighborhood-level location, the most precise thing friends see
   sharing: boolean; // opted in to the map
   mode: AccessMode;
 };
@@ -162,7 +171,7 @@ export type Guide = {
   intro: string;
   accent: Accent;
   items: GuideItem[];
-  forModes?: AccessMode[];
+  modes: AccessMode[];
 };
 
 export type Weather = {
@@ -177,5 +186,6 @@ export type FoodResource = {
   detail: string;
   hours: string;
   access: Access;
+  audience?: 'students' | 'everyone';
   coords: LatLng;
 };

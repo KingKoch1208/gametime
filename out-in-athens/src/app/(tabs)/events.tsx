@@ -5,6 +5,7 @@ import { FlatList, Pressable, ScrollView, View } from 'react-native';
 
 import { BottomSheet } from '@/components/BottomSheet';
 import { TabHeader } from '@/components/Header';
+import { SearchBar } from '@/components/SearchBar';
 import { Icon } from '@/components/Icon';
 import { EmptyState, FreshStamp, useStampRefresh } from '@/components/misc';
 import { TicketCard, TicketSkeleton } from '@/components/TicketCard';
@@ -59,10 +60,11 @@ const DEFAULT_F: F = {
 
 export default function EventsScreen() {
   const { c } = useTheme();
-  const params = useLocalSearchParams<{ free?: string; cat?: string }>();
+  const params = useLocalSearchParams<{ free?: string; cat?: string; sober?: string }>();
   const { viewer, prefs, setPrefs, profile } = useApp();
   const now = useNow();
   const [cat, setCat] = useState<EventCategory | 'all'>('all');
+  const [q, setQ] = useState('');
   const [view, setView] = useState<'list' | 'calendar'>('list');
   const [day, setDay] = useState<Date>(startOfDay(now));
   const [f, setF] = useState<F>(DEFAULT_F);
@@ -80,8 +82,9 @@ export default function EventsScreen() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (params.free) setF((x) => ({ ...x, freeOnly: true, window: 'week' }));
+    if (params.sober) setF((x) => ({ ...x, soberFriendly: true, window: 'week' }));
     if (params.cat) setCat(params.cat as EventCategory);
-  }, [params.free, params.cat]);
+  }, [params.free, params.cat, params.sober]);
 
   const query: EventFilters = {
     viewer,
@@ -99,6 +102,7 @@ export default function EventsScreen() {
     carFree: f.carFree,
     maxPrice: f.maxPrice === 'any' ? null : Number(f.maxPrice),
     includeAway: cat === 'sports',
+    query: q,
   };
   const queryKey = JSON.stringify({ ...query, viewer: undefined, day: query.day?.toDateString() });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -135,7 +139,8 @@ export default function EventsScreen() {
                 </Txt>
               }
             />
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 8, paddingTop: 16 }}>
+            <SearchBar value={q} onChange={setQ} placeholder="Search events, venues…" />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 8, paddingTop: 14 }}>
               {CATS.map((ct) => (
                 <Chip key={ct.key} label={ct.label} active={cat === ct.key} onPress={() => setCat(ct.key)} />
               ))}

@@ -82,8 +82,9 @@ type BtnProps = Omit<PressableProps, 'children'> & {
 
 export function Button({ label, icon, kind = 'primary', small, full, style, disabled, onPress, ...rest }: BtnProps) {
   const { c } = useTheme();
-  const bg = kind === 'primary' ? c.brickFill : kind === 'ivy' ? c.ivyFill : kind === 'mustard' ? c.mustard : 'transparent';
-  const fg = kind === 'secondary' || kind === 'ghost' ? c.text : kind === 'mustard' ? palette.ink : c.onFill;
+  const solid = kind === 'primary' || kind === 'ivy' || kind === 'mustard';
+  const bg = disabled && solid ? c.surfaceAlt : kind === 'primary' ? c.brickFill : kind === 'ivy' ? c.ivyFill : kind === 'mustard' ? c.mustard : 'transparent';
+  const fg = disabled && solid ? c.text : kind === 'secondary' || kind === 'ghost' ? c.text : kind === 'mustard' ? palette.ink : c.onFill;
   return (
     <Pressable
       accessibilityRole="button"
@@ -100,11 +101,13 @@ export function Button({ label, icon, kind = 'primary', small, full, style, disa
         full && { alignSelf: 'stretch' },
         {
           backgroundColor: bg,
-          borderColor: kind === 'ghost' ? 'transparent' : kind === 'secondary' ? c.lineStrong : bg,
-          opacity: disabled ? 0.4 : 1,
+          borderColor: kind === 'ghost' ? 'transparent' : kind === 'secondary' || (disabled && solid) ? c.lineStrong : bg,
+          borderStyle: disabled && solid ? 'dashed' : 'solid',
+          opacity: disabled && !solid ? 0.5 : 1,
           transform: [{ translateY: pressed ? 1.5 : 0 }],
         },
         kind !== 'ghost' &&
+          !disabled &&
           !pressed && { shadowColor: palette.ink, shadowOffset: { width: 2, height: 2 }, shadowOpacity: kind === 'secondary' ? 0 : 0.9, shadowRadius: 0 },
         style,
       ]}
@@ -139,7 +142,7 @@ export function IconButton({
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ selected: !!active }}
-      hitSlop={6}
+      hitSlop={8}
       onPress={() => {
         haptic.tap();
         onPress();
@@ -189,6 +192,7 @@ export function Chip({
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ selected: !!active }}
+      hitSlop={{ top: small ? 12 : 8, bottom: small ? 12 : 8, left: 2, right: 2 }}
       onPress={() => {
         haptic.tap();
         onPress?.();
@@ -223,7 +227,7 @@ export function SectionHeader({ title, kicker, action, onAction }: { title: stri
         <Squiggle color={c.mustard} width={Math.min(140, title.length * 9)} />
       </View>
       {action && (
-        <Pressable onPress={onAction} hitSlop={10} accessibilityRole="link" accessibilityLabel={`${action}: ${title}`}>
+        <Pressable onPress={onAction} hitSlop={{ top: 15, bottom: 15, left: 8, right: 8 }} accessibilityRole="link" accessibilityLabel={`${action}: ${title}`}>
           <Txt v="labelSm" color={c.brick}>
             {action} →
           </Txt>

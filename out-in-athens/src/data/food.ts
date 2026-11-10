@@ -460,6 +460,7 @@ export const FOOD_RESOURCES: FoodResource[] = [
     detail: 'Free groceries for students. No questions, just your UGA ID.',
     hours: 'Mon–Fri, sample hours',
     access: 'uga_id',
+    audience: 'students',
     coords: { latitude: 33.9518, longitude: -83.3747 },
   },
   {
@@ -468,6 +469,7 @@ export const FOOD_RESOURCES: FoodResource[] = [
     detail: 'Students can request donated dining hall swipes, privately, once a semester.',
     hours: 'Request anytime',
     access: 'uga_id',
+    audience: 'students',
     coords: { latitude: 33.9497, longitude: -83.3779 },
   },
   {

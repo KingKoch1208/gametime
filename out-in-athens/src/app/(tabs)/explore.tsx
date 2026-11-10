@@ -5,6 +5,7 @@ import { FlatList, Pressable, ScrollView, View } from 'react-native';
 
 import { GuideCover } from '@/components/GuideCover';
 import { TabHeader } from '@/components/Header';
+import { SearchBar } from '@/components/SearchBar';
 import { CATEGORY_ICON, Icon } from '@/components/Icon';
 import { EmptyState, FreshStamp, useStampRefresh } from '@/components/misc';
 import { PlaceCard } from '@/components/PlaceCard';
@@ -34,13 +35,14 @@ export default function ExploreScreen() {
   const { viewer, checkins } = useApp();
   const now = useNow();
   const [cat, setCat] = useState<ExploreCategory | null>(null);
+  const [q, setQ] = useState('');
   const [carFree, setCarFree] = useState(false);
   const [openNow, setOpenNow] = useState(false);
   const [tick, setTick] = useState(0);
   const { control, stampKey } = useStampRefresh(() => setTick((t) => t + 1));
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const places = useMemo(() => getPlaces({ viewer, kind: 'place', category: cat, carFree, openNow }), [viewer, cat, carFree, openNow, tick]);
+  const places = useMemo(() => getPlaces({ viewer, kind: 'place', category: cat, carFree, openNow, query: q }), [viewer, cat, carFree, openNow, tick, q]);
   const stamps = Object.keys(checkins).length;
   const nextBadge = BADGES.map((b) => ({ b, p: badgeProgress(b, checkins) })).find((x) => x.p.have < x.p.need);
 
@@ -63,6 +65,7 @@ export default function ExploreScreen() {
                 </Txt>
               }
             />
+            <SearchBar value={q} onChange={setQ} placeholder="Search places, neighborhoods…" />
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 20, gap: 8, marginTop: 18 }}>
               {CATS.map((ct, i) => {
                 const on = cat === ct.key;
@@ -142,7 +145,7 @@ export default function ExploreScreen() {
 
             <SectionHeader title="Curated guides" kicker="Editor’s picks" />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}>
-              {getGuides().map((g) => (
+              {getGuides(viewer.mode).map((g) => (
                 <GuideCover key={g.id} guide={g} />
               ))}
             </ScrollView>
